@@ -28,8 +28,8 @@ If you touched adapter behavior, include the target site and a reproducible requ
 
 - Project versions come from `version.json`.
 - Use `npm run version:set -- x.y.z` to sync `package.json`, lockfile, and both manifests.
-- Pushing a Git tag that starts with lowercase `v`, for example `v1.2.3`, triggers GitHub Actions to build release ZIP packages.
-- Each release ZIP contains a single top-level folder. Extract that folder and load it as an unpacked browser extension.
+- Pushing a Git tag that starts with lowercase `v`, for example `v1.2.3`, triggers GitHub Actions to build the Chrome release ZIP.
+- The release ZIP contains a single top-level folder. Extract that folder and load it as an unpacked browser extension.
 
 ## Adapter changes
 

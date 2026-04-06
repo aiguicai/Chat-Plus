@@ -13,6 +13,7 @@
     "build": "npm run clean && npm run typecheck && npm run build:chrome && npm run build:firefox",
     "package:chrome": "node scripts/package-release.mjs chrome",
     "package:firefox": "node scripts/package-release.mjs firefox",
+    "release:build:chrome": "npm run clean:release && npm run clean && npm run typecheck && npm run build:chrome && npm run package:chrome",
     "release:build": "npm run build && npm run package:chrome && npm run package:firefox",
     "test": "node --import tsx --test test/**/*.test.ts",
     "dev:prepare": "npm run version:sync && node scripts/copy-static.mjs chrome dist/chrome",

@@ -128,7 +128,7 @@ npm run dev
 | Firefox | `dist/firefox/` | Open `about:debugging`, choose **This Firefox**, then load `dist/firefox/manifest.json` |
 
 > [!NOTE]
-> Chat Plus is primarily developed and tested for Chrome / Edge. Firefox support is kept as a compatible build target with a separate manifest, but it is not the main maintenance target of this repository. If you want to keep Firefox support in sync long term, community contributions are welcome.
+> Chat Plus is primarily developed and tested for Chrome / Edge. Firefox support is kept as a source build target with a separate manifest, but GitHub Releases only publish the Chrome package.
 
 ### Configure a supported site
 
@@ -266,6 +266,7 @@ This is the part of Chat Plus that turns MCP tools into something closer to a pr
 | `npm run build` | Clean, typecheck, and build Chrome + Firefox bundles |
 | `npm run build:chrome` | Build only the Chrome bundle |
 | `npm run build:firefox` | Build only the Firefox bundle |
+| `npm run release:build:chrome` | Build and package the Chrome release ZIP used by GitHub Releases |
 | `npm run typecheck` | Run TypeScript without emitting output |
 | `npm run version:set -- x.y.z` | Update the extension version |
 | `npm run version:sync` | Sync package and manifest versions |

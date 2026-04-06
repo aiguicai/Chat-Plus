@@ -1,4 +1,4 @@
-name: Release Extension Packages
+name: Release Chrome Package
 
 on:
   push:
@@ -28,13 +28,13 @@ jobs:
       - name: Sync version from tag
         run: npm run version:set -- ${GITHUB_REF_NAME#v}
 
-      - name: Build release packages
-        run: npm run release:build
+      - name: Build Chrome release package
+        run: npm run release:build:chrome
 
       - name: Upload GitHub release assets
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
           files: |
-            release/*.zip
-            release/*.sha256.txt
+            release/*-chrome.zip
+            release/*-chrome.sha256.txt
