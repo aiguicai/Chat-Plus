@@ -1,0 +1,82 @@
+{
+  "manifest_version": 3,
+  "name": "Chat Plus",
+  "version": "0.0.1",
+  "description": "Open-source MCP orchestration side panel for AI chat websites.",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting",
+    "tabs",
+    "tabGroups",
+    "sidePanel",
+    "webNavigation"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "sandbox": {
+    "pages": [
+      "sandbox.html"
+    ]
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';",
+    "sandbox": "sandbox allow-scripts; script-src 'self' 'unsafe-eval'; child-src 'self';"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "sandbox.html",
+        "sandbox/*"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ],
+  "action": {
+    "default_title": "Chat Plus",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "page-monitor/page-monitor-shared.js",
+        "page-monitor/page-monitor-http.js",
+        "page-monitor/page-monitor-streams.js",
+        "page-monitor/page-monitor-main.js"
+      ],
+      "all_frames": true,
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content/content-main.js"
+      ],
+      "all_frames": true
+    }
+  ],
+  "background": {
+    "service_worker": "background/background.js"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

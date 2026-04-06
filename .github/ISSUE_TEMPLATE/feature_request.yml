@@ -1,0 +1,27 @@
+name: Feature request
+description: Propose an improvement for Chat Plus.
+title: "[Feature] "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What workflow is missing or painful today?
+      placeholder: Describe the current limitation.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the behavior you want.
+      placeholder: Explain the desired UX or architecture change.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Include examples, related tools, or implementation notes if relevant.

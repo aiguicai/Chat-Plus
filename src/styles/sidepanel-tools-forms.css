@@ -1,0 +1,413 @@
+.cp-tools-segment:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--cp-accent) 42%, transparent) !important;
+  outline-offset: 1px !important;
+}
+
+.cp-tools-form-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+
+.cp-tools-field {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 6px !important;
+}
+
+.cp-tools-field.is-invalid .cp-inline-label {
+  color: var(--cp-danger) !important;
+}
+
+.cp-tools-field-wide {
+  grid-column: 1 / -1 !important;
+}
+
+.cp-tools-required-label {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+.cp-tools-required-mark {
+  color: var(--cp-danger) !important;
+  font-size: 0.8rem !important;
+  line-height: 1 !important;
+}
+
+.cp-tools-input,
+.cp-tools-select,
+.cp-tools-textarea {
+  width: 100% !important;
+  min-width: 0 !important;
+  border: 1px solid var(--cp-border) !important;
+  border-radius: 12px !important;
+  background: color-mix(in srgb, var(--cp-surface-soft) 96%, transparent) !important;
+  color: var(--cp-title) !important;
+  font-size: 0.76rem !important;
+  line-height: 1.5 !important;
+  outline: none !important;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease !important;
+}
+
+.cp-tools-input,
+.cp-tools-select {
+  min-height: 38px !important;
+  padding: 0 10px !important;
+}
+
+.cp-tools-textarea {
+  width: 100% !important;
+  min-height: 88px !important;
+  padding: 12px 13px !important;
+  resize: vertical !important;
+  font-family: "IBM Plex Mono", "Cascadia Mono", monospace !important;
+  line-height: 1.6 !important;
+  white-space: pre-wrap !important;
+}
+
+.cp-tools-input::placeholder,
+.cp-tools-textarea::placeholder {
+  color: color-mix(in srgb, var(--cp-text-muted) 82%, transparent) !important;
+}
+
+.cp-tools-input:focus,
+.cp-tools-select:focus,
+.cp-tools-textarea:focus {
+  border-color: color-mix(in srgb, var(--cp-accent) 42%, transparent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cp-accent) 10%, transparent) !important;
+  background: var(--cp-surface) !important;
+}
+
+.cp-tools-input.is-invalid,
+.cp-tools-select.is-invalid,
+.cp-tools-textarea.is-invalid {
+  border-color: color-mix(in srgb, var(--cp-danger) 44%, transparent) !important;
+  background: color-mix(in srgb, var(--cp-danger) 6%, var(--cp-surface-soft)) !important;
+}
+
+.cp-tools-input.is-invalid:focus,
+.cp-tools-select.is-invalid:focus,
+.cp-tools-textarea.is-invalid:focus {
+  border-color: color-mix(in srgb, var(--cp-danger) 52%, transparent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cp-danger) 10%, transparent) !important;
+}
+
+.cp-tools-required-note {
+  grid-column: 1 / -1 !important;
+  padding: 2px 2px 0 !important;
+  color: var(--cp-danger) !important;
+  font-size: 0.7rem !important;
+  line-height: 1.5 !important;
+}
+
+.cp-tools-json-textarea {
+  width: 100% !important;
+  min-height: 116px !important;
+  padding: 12px 14px !important;
+  border: 1px solid var(--cp-border) !important;
+  border-radius: 14px !important;
+  background: color-mix(in srgb, var(--cp-surface-soft) 97%, transparent) !important;
+  color: var(--cp-title) !important;
+  font-size: 0.72rem !important;
+  line-height: 1.6 !important;
+  font-family: "IBM Plex Mono", "Cascadia Mono", monospace !important;
+  resize: vertical !important;
+  outline: none !important;
+}
+
+.cp-tools-json-textarea:focus {
+  border-color: color-mix(in srgb, var(--cp-accent) 42%, transparent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cp-accent) 10%, transparent) !important;
+}
+
+.cp-tools-json-textarea::placeholder {
+  color: color-mix(in srgb, var(--cp-text-muted) 78%, transparent) !important;
+}
+
+.cp-tools-tool-list {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 8px !important;
+  width: 100% !important;
+}
+
+.cp-tools-server-select {
+  width: 26px !important;
+  height: 26px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  cursor: pointer !important;
+}
+
+.cp-tools-server-select-box {
+  width: 18px !important;
+  height: 18px !important;
+  position: relative !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: 1px solid color-mix(in srgb, var(--cp-border-strong) 88%, transparent) !important;
+  border-radius: 5px !important;
+  background: color-mix(in srgb, var(--cp-surface) 95%, transparent) !important;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease !important;
+}
+
+.cp-tools-server-select-box::before,
+.cp-tools-server-select-box::after {
+  content: "" !important;
+  position: absolute !important;
+  opacity: 0 !important;
+  transition: opacity 160ms ease !important;
+}
+
+.cp-tools-server-select-box::before {
+  width: 8px !important;
+  height: 5px !important;
+  border-left: 2px solid var(--cp-success) !important;
+  border-bottom: 2px solid var(--cp-success) !important;
+  transform: rotate(-45deg) translateY(-1px) !important;
+}
+
+.cp-tools-server-select-box::after {
+  width: 9px !important;
+  height: 2px !important;
+  border-radius: 999px !important;
+  background: var(--cp-success) !important;
+}
+
+.cp-tools-server-select-checked .cp-tools-server-select-box,
+.cp-tools-server-select-indeterminate .cp-tools-server-select-box {
+  border-color: color-mix(in srgb, var(--cp-success) 74%, var(--cp-success)) !important;
+  background: color-mix(in srgb, var(--cp-success) 18%, var(--cp-surface)) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cp-success) 10%, transparent) !important;
+}
+
+.cp-tools-server-select-checked .cp-tools-server-select-box::before {
+  opacity: 1 !important;
+}
+
+.cp-tools-server-select-indeterminate .cp-tools-server-select-box::after {
+  opacity: 1 !important;
+}
+
+.cp-tools-server-select:focus-visible .cp-tools-server-select-box {
+  outline: 2px solid color-mix(in srgb, var(--cp-accent) 36%, transparent) !important;
+  outline-offset: 2px !important;
+}
+
+.cp-tools-server-select:disabled {
+  cursor: not-allowed !important;
+}
+
+.cp-tools-server-select:disabled .cp-tools-server-select-box {
+  opacity: 0.55 !important;
+}
+
+.cp-tools-tool-row {
+  display: grid !important;
+  grid-template-columns: 20px minmax(0, 1fr) !important;
+  align-items: flex-start !important;
+  justify-items: stretch !important;
+  gap: 12px !important;
+  padding: 10px 11px !important;
+  border: 1px solid var(--cp-border) !important;
+  border-radius: 12px !important;
+  background: color-mix(in srgb, var(--cp-surface-soft) 94%, transparent) !important;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease !important;
+}
+
+.cp-tools-tool-row.is-enabled {
+  border-color: color-mix(in srgb, var(--cp-success) 34%, var(--cp-border-strong)) !important;
+  background: color-mix(in srgb, var(--cp-success) 8%, var(--cp-surface-soft)) !important;
+}
+
+.cp-tools-tool-row-readonly {
+  display: block !important;
+  width: 100% !important;
+}
+
+.cp-tools-tool-row-readonly .cp-tools-tool-copy {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.cp-tools-tool-row-readonly .cp-tools-tool-name,
+.cp-tools-tool-row-readonly .cp-tools-tool-desc {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.cp-tools-tool-row-readonly .cp-tools-tool-name {
+  display: block !important;
+}
+
+.cp-tools-tool-row-readonly .cp-tools-tool-expand {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 8px auto 0 !important;
+}
+
+.cp-tools-tool-checkbox-wrap {
+  position: relative !important;
+  width: 20px !important;
+  height: 20px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-top: 2px !important;
+  cursor: pointer !important;
+}
+
+.cp-tools-tool-checkbox-input {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  opacity: 0 !important;
+  cursor: pointer !important;
+}
+
+.cp-tools-tool-checkbox {
+  position: relative !important;
+  width: 16px !important;
+  height: 16px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: 1px solid var(--cp-border-strong) !important;
+  border-radius: 5px !important;
+  background: color-mix(in srgb, var(--cp-surface) 95%, transparent) !important;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease !important;
+}
+
+.cp-tools-tool-checkbox::after {
+  content: "" !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  width: 8px !important;
+  height: 5px !important;
+  border-left: 2px solid transparent !important;
+  border-bottom: 2px solid transparent !important;
+  transform: translate(-50%, -58%) rotate(-45deg) scale(0.8) !important;
+  transform-origin: center !important;
+  opacity: 0 !important;
+  transition:
+    opacity 160ms ease,
+    border-color 160ms ease !important;
+}
+
+.cp-tools-tool-checkbox-input:checked + .cp-tools-tool-checkbox {
+  border-color: color-mix(in srgb, var(--cp-success) 72%, var(--cp-success)) !important;
+  background: color-mix(in srgb, var(--cp-success) 18%, var(--cp-surface)) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cp-success) 10%, transparent) !important;
+}
+
+.cp-tools-tool-checkbox-input:checked + .cp-tools-tool-checkbox::after {
+  border-color: var(--cp-success) !important;
+  opacity: 1 !important;
+}
+
+.cp-tools-tool-checkbox-input:focus-visible + .cp-tools-tool-checkbox {
+  outline: 2px solid color-mix(in srgb, var(--cp-accent) 36%, transparent) !important;
+  outline-offset: 2px !important;
+}
+
+.cp-tools-tool-checkbox-input:disabled + .cp-tools-tool-checkbox {
+  opacity: 0.55 !important;
+  cursor: not-allowed !important;
+}
+
+.cp-tools-tool-name {
+  color: var(--cp-title) !important;
+  font-size: 0.82rem !important;
+  font-weight: 700 !important;
+  width: 100% !important;
+}
+
+.cp-tools-tool-desc {
+  color: var(--cp-text-soft) !important;
+  font-size: 0.74rem !important;
+  line-height: 1.55 !important;
+  width: 100% !important;
+  max-width: none !important;
+  word-break: break-word !important;
+  display: -webkit-box !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 3 !important;
+}
+
+.cp-tools-tool-desc.is-expanded {
+  display: block !important;
+  overflow: visible !important;
+  -webkit-line-clamp: unset !important;
+}
+
+.cp-tools-tool-expand {
+  width: auto !important;
+  min-width: 96px !important;
+  max-width: 132px !important;
+  min-height: 28px !important;
+  padding: 0 10px !important;
+  border: 1px solid var(--cp-border) !important;
+  border-radius: 999px !important;
+  background: color-mix(in srgb, var(--cp-surface) 94%, transparent) !important;
+  color: var(--cp-text-soft) !important;
+  font-size: 0.7rem !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    color 180ms ease !important;
+  justify-self: center !important;
+}
+
+.cp-tools-tool-expand:hover {
+  border-color: color-mix(in srgb, var(--cp-accent) 30%, var(--cp-border-strong)) !important;
+  background: color-mix(in srgb, var(--cp-accent) 10%, var(--cp-surface)) !important;
+  color: var(--cp-title) !important;
+}
+
+.cp-tools-tool-expand:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--cp-accent) 36%, transparent) !important;
+  outline-offset: 2px !important;
+}
+
+.cp-tools-tool-empty {
+  padding: 14px !important;
+  color: var(--cp-text-soft) !important;
+  font-size: 0.74rem !important;
+  line-height: 1.55 !important;
+}
+
+.cp-tools-tool-empty.is-danger {
+  color: var(--cp-danger) !important;
+}
+
+.cp-tools-empty-card {
+  align-items: flex-start !important;
+}
+

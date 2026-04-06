@@ -1,0 +1,378 @@
+@media (max-width: 640px) {
+  .cp-home-hero,
+  .cp-library-detail-head,
+  .cp-editor-overview-head,
+  .cp-selector-item-head,
+  .cp-live-card-head,
+  .cp-overview-card-top {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .cp-metric-grid,
+  .cp-library-metrics,
+  .cp-editor-summary-grid,
+  .cp-info-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .cp-toolbar-actions,
+  .cp-action-row,
+  .cp-selector-item-actions {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .cp-library-toolbar {
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    flex-wrap: wrap !important;
+  }
+
+  .cp-library-pagination {
+    justify-content: space-between !important;
+  }
+
+  .cp-selector-item.cp-selector-item-compact .cp-selector-item-actions {
+    flex-direction: row !important;
+    align-items: center !important;
+  }
+
+  .cp-tools-control-group {
+    align-items: center !important;
+    justify-content: flex-start !important;
+  }
+
+  .cp-tools-toolbar-actions {
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+  }
+
+  .cp-tools-toolbar-actions .cp-library-action-btn {
+    flex: 0 0 auto !important;
+  }
+
+  .cp-tools-server-head {
+    align-items: flex-start !important;
+  }
+
+  .cp-tools-server-head-actions {
+    margin-left: auto !important;
+    width: auto !important;
+    justify-content: flex-end !important;
+    flex-wrap: nowrap !important;
+  }
+
+  .cp-tools-delete-popover {
+    right: 0 !important;
+    top: calc(100% + 8px) !important;
+    transform: none !important;
+  }
+
+  .cp-orch-row {
+    grid-template-columns: 38px minmax(0, 1fr) auto !important;
+    align-items: center !important;
+  }
+
+  .cp-orch-row-actions {
+    grid-column: auto !important;
+    width: auto !important;
+    justify-self: end !important;
+    justify-content: flex-end !important;
+    flex-wrap: nowrap !important;
+  }
+
+  .cp-orch-tools-panel-head,
+  .cp-orch-tools-toolbar {
+    grid-template-columns: 1fr !important;
+  }
+
+  .cp-orch-tools-toolbar {
+    grid-template-columns: auto minmax(0, 1fr) !important;
+    align-items: center !important;
+  }
+
+  .cp-orch-tools-server-head {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+  }
+
+  .cp-orch-tools-add-item {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+  }
+
+  .cp-orch-tools-steps {
+    grid-template-columns: 1fr !important;
+  }
+
+  .cp-tools-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .cp-tools-tool-row {
+    grid-template-columns: 20px minmax(0, 1fr) !important;
+  }
+
+  .cp-about-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .cp-library-list {
+    grid-template-columns: 1fr !important;
+  }
+
+  .cp-editor-step-head {
+    grid-template-columns: 1fr !important;
+  }
+
+  .cp-editor-step-tools {
+    width: 100% !important;
+    justify-content: flex-start !important;
+    justify-self: stretch !important;
+    gap: 8px !important;
+    flex-wrap: wrap !important;
+  }
+
+  .cp-editor-step-actions-inline {
+    gap: 6px !important;
+  }
+
+  .cp-editor-topbar {
+    grid-template-columns: 26px minmax(0, 1fr) 26px !important;
+    gap: 10px !important;
+  }
+
+  .cp-editor-topbar .cp-toolbar-icon-sm {
+    min-width: 26px !important;
+    height: 26px !important;
+  }
+
+  .cp-library-summary-top,
+  .cp-site-row-foot {
+    align-items: stretch !important;
+  }
+
+  .cp-site-row-foot {
+    flex-direction: column !important;
+  }
+
+  .cp-site-row-actions {
+    margin-left: 0 !important;
+    justify-content: flex-start !important;
+  }
+
+  .cp-site-row-badges {
+    margin-left: 0 !important;
+    justify-content: flex-start !important;
+  }
+
+  .cp-orch-row {
+    grid-template-columns: 34px minmax(0, 1fr) auto !important;
+    gap: 10px !important;
+    padding: 10px !important;
+  }
+
+  .cp-orch-row-index {
+    width: 34px !important;
+    height: 34px !important;
+    border-radius: 10px !important;
+  }
+
+  .cp-orch-row-actions {
+    grid-column: auto !important;
+    gap: 6px !important;
+  }
+
+  .cp-orch-row-toggle {
+    justify-content: flex-end !important;
+    justify-self: auto !important;
+    padding-left: 0 !important;
+  }
+
+  .cp-orch-tools-trigger,
+  .cp-orch-system-trigger {
+    min-width: 32px !important;
+    width: 32px !important;
+    min-height: 32px !important;
+  }
+
+  .cp-orch-tools-add-item-actions,
+  .cp-orch-tools-server-actions {
+    justify-content: flex-start !important;
+  }
+
+  .cp-tools-control-group {
+    align-items: center !important;
+  }
+
+  .cp-tools-toolbar-actions {
+    gap: 6px !important;
+  }
+
+  .cp-tools-toolbar-actions .cp-library-action-btn {
+    padding: 0 8px !important;
+    gap: 5px !important;
+    font-size: 0.7rem !important;
+  }
+
+  .cp-tools-server-head-top {
+    gap: 6px !important;
+  }
+
+  .cp-tools-server-meta {
+    gap: 8px !important;
+  }
+
+  .cp-tools-server-title-row {
+    gap: 7px !important;
+  }
+
+  .cp-tools-server-title-main {
+    gap: 7px !important;
+  }
+
+  .cp-tools-server-head-actions {
+    align-items: center !important;
+  }
+
+  .cp-tools-segmented {
+    width: fit-content !important;
+    max-width: 100% !important;
+  }
+
+  .cp-tools-segmented.is-compact {
+    flex: 0 0 auto !important;
+  }
+
+  .cp-tools-server-title-actions .cp-tools-segmented.is-compact {
+    min-height: 28px !important;
+  }
+
+  .cp-tools-server-title-actions .cp-tools-segmented.is-compact .cp-tools-segment {
+    padding: 0 7px !important;
+    font-size: 0.6rem !important;
+  }
+
+  .cp-tools-segment {
+    min-height: 28px !important;
+    padding: 0 9px !important;
+    font-size: 0.68rem !important;
+  }
+
+  .cp-tools-segment-content {
+    gap: 5px !important;
+  }
+
+  .cp-tools-segment-badge {
+    min-width: 16px !important;
+    height: 16px !important;
+    padding: 0 4px !important;
+    font-size: 0.6rem !important;
+  }
+
+  .cp-tools-enable-toggle {
+    gap: 0 !important;
+    font-size: 0.68rem !important;
+  }
+
+  .cp-tools-enable-toggle .cp-toggle {
+    width: 32px !important;
+    height: 18px !important;
+  }
+
+  .cp-tools-enable-toggle .cp-toggle-slider::before {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  .cp-tools-enable-toggle .cp-toggle input:checked + .cp-toggle-slider::before {
+    transform: translateX(14px) !important;
+  }
+
+  .cp-tools-collapse-btn {
+    width: 22px !important;
+    height: 22px !important;
+    flex-basis: 22px !important;
+  }
+
+  .cp-tools-collapse-btn svg {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  .cp-tools-delete-popover {
+    padding: 4px 6px 4px 8px !important;
+    gap: 5px !important;
+  }
+
+  .cp-tools-delete-popover-text {
+    font-size: 0.66rem !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cp-btn,
+  .cp-pick-btn,
+  .cp-tab,
+  .cp-toggle-slider::before,
+  .cp-icon-btn,
+  .cp-mini-action-btn,
+  .cp-record-dot,
+  .cp-editor-test-btn.is-running,
+  .cp-editor-test-btn.is-pulse,
+  .cp-editor-test-btn.is-pulse::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+@keyframes cp-test-pop {
+  0% {
+    transform: scale(1);
+  }
+
+  38% {
+    transform: scale(1.08);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes cp-test-ring {
+  0% {
+    opacity: 0.5;
+    transform: scale(0.84);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.18);
+  }
+}
+
+@keyframes cp-record-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 40%, transparent);
+  }
+
+  70% {
+    box-shadow: 0 0 0 8px color-mix(in srgb, currentColor 0%, transparent);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 0%, transparent);
+  }
+}
+
+@keyframes cp-test-spin {
+  100% {
+    transform: rotate(360deg);
+  }
+}

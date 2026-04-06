@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "allowImportingTsExtensions": false,
+    "outDir": "./dist",
+    "rootDir": "./src"
+  },
+  "include": [
+    "src/page-monitor/page-monitor-http.ts",
+    "src/page-monitor/page-monitor-main.ts",
+    "src/page-monitor/page-monitor-shared.ts",
+    "src/page-monitor/page-monitor-streams.ts",
+    "src/runtime-globals.d.ts"
+  ]
+}

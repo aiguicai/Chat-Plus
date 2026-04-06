@@ -1,0 +1,54 @@
+name: Bug report
+description: Report a reproducible problem in Chat Plus.
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please include enough detail to reproduce the problem from a clean browser profile when possible.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What went wrong?
+      placeholder: A short description of the problem.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: List the exact steps, URLs, and actions that trigger the issue.
+      placeholder: |
+        1. Open ...
+        2. Enable ...
+        3. Send ...
+        4. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      placeholder: What should have happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Browser, extension version, target site, and MCP server details.
+      placeholder: |
+        - Browser:
+        - Chat Plus version:
+        - Site:
+        - MCP transport:
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: Paste console errors, screenshots, or request/response snippets if available.

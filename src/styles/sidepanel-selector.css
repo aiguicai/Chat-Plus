@@ -1,0 +1,492 @@
+.cp-overview-card-top {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+}
+
+.cp-overview-card-top > span:first-child {
+  display: grid !important;
+  gap: 4px !important;
+}
+
+.cp-selector-stack {
+  display: grid !important;
+  gap: 10px !important;
+  min-width: 0 !important;
+}
+
+.cp-selector-list,
+.cp-selector-list-compact {
+  display: grid !important;
+  gap: 8px !important;
+}
+
+.cp-selector-item.cp-selector-item-compact,
+.cp-selector-empty.cp-selector-empty-compact {
+  border: 1px solid var(--cp-border) !important;
+  border-radius: 14px !important;
+  background: var(--cp-surface-soft) !important;
+  box-shadow: none !important;
+  padding: 9px 10px !important;
+}
+
+.cp-selector-item.cp-selector-item-compact {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+  min-height: 46px !important;
+}
+
+.cp-selector-item-main {
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.cp-selector-item-order {
+  width: 18px !important;
+  height: 18px !important;
+  flex: 0 0 auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 999px !important;
+  background: color-mix(in srgb, var(--cp-accent) 10%, transparent) !important;
+  color: var(--cp-accent-strong) !important;
+  font-size: 0.64rem !important;
+  font-weight: 700 !important;
+}
+
+.cp-selector-item-meta-inline {
+  display: grid !important;
+  gap: 4px !important;
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
+}
+
+.cp-selector-item-text {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  color: var(--cp-title) !important;
+  font-size: 0.75rem !important;
+  line-height: 1.35 !important;
+}
+
+.cp-selector-item-kind {
+  display: inline-flex !important;
+  align-items: center !important;
+  width: fit-content !important;
+  min-height: 18px !important;
+  padding: 0 6px !important;
+  border-radius: 999px !important;
+  border: 1px solid color-mix(in srgb, var(--cp-accent) 22%, transparent) !important;
+  background: color-mix(in srgb, var(--cp-accent) 9%, transparent) !important;
+  color: var(--cp-accent-strong) !important;
+  font-size: 0.62rem !important;
+  font-weight: 700 !important;
+}
+
+.cp-selector-item.cp-selector-item-compact .cp-selector-item-actions {
+  flex: 0 0 auto !important;
+  gap: 6px !important;
+  flex-wrap: nowrap !important;
+  flex-direction: row !important;
+  align-items: center !important;
+}
+
+.cp-selector-toggle-wrap {
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+.cp-selector-icon-btn {
+  min-width: 28px !important;
+  height: 28px !important;
+}
+
+.cp-selector-empty-compact {
+  color: var(--cp-text-muted) !important;
+  font-size: 0.74rem !important;
+  line-height: 1.4 !important;
+}
+
+:where(.cp-selector-empty) {
+  color: var(--cp-text-soft) !important;
+  font-size: 0.74rem !important;
+  line-height: 1.55 !important;
+}
+
+:where(.cp-selector-empty).is-danger {
+  color: var(--cp-danger) !important;
+}
+
+.cp-selector-item,
+.cp-selector-empty,
+.cp-live-card,
+.cp-info-field,
+.cp-monitor-preview {
+  padding: 12px !important;
+}
+
+.cp-info-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.cp-info-field.is-wide {
+  grid-column: 1 / -1 !important;
+}
+
+.cp-live-card,
+.cp-monitor-preview {
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+}
+
+.cp-advanced-toggle {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  min-height: 46px !important;
+  padding: 0 14px !important;
+  border-radius: 14px !important;
+  border: 1px solid var(--cp-border) !important;
+  background: transparent !important;
+  color: var(--cp-text-soft) !important;
+}
+
+.cp-advanced-panel {
+  display: grid !important;
+  gap: 12px !important;
+}
+
+.cp-monitor-preview {
+  max-height: 180px !important;
+  overflow: auto !important;
+  font-size: 0.74rem !important;
+  line-height: 1.6 !important;
+}
+
+.cp-inline-tip {
+  min-height: 20px !important;
+  color: var(--cp-text-muted) !important;
+  font-size: 0.76rem !important;
+  text-align: center !important;
+}
+
+.cp-shortcut-modal-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 40 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 20px !important;
+  background: rgba(18, 16, 15, 0.22) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.cp-shortcut-modal {
+  width: min(300px, calc(100vw - 40px)) !important;
+  display: grid !important;
+  gap: 12px !important;
+  padding: 16px !important;
+  border: 1px solid var(--cp-border-strong) !important;
+  border-radius: 18px !important;
+  background: var(--cp-panel) !important;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2) !important;
+}
+
+.cp-shortcut-modal-head,
+.cp-shortcut-actions {
+  display: grid !important;
+  gap: 6px !important;
+}
+
+.cp-shortcut-presets {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+}
+
+.cp-shortcut-capture {
+  width: 100% !important;
+  display: grid !important;
+  gap: 4px !important;
+  padding: 12px 13px !important;
+  border: 1px dashed color-mix(in srgb, var(--cp-accent) 32%, var(--cp-border)) !important;
+  border-radius: 14px !important;
+  background: color-mix(in srgb, var(--cp-accent) 6%, transparent) !important;
+  color: var(--cp-text-soft) !important;
+  text-align: left !important;
+  cursor: text !important;
+}
+
+.cp-shortcut-capture:focus-visible {
+  outline: none !important;
+  border-style: solid !important;
+  border-color: color-mix(in srgb, var(--cp-accent) 46%, transparent) !important;
+  background: color-mix(in srgb, var(--cp-accent) 10%, transparent) !important;
+}
+
+.cp-shortcut-capture-label {
+  color: var(--cp-text-muted) !important;
+  font-size: 0.68rem !important;
+}
+
+.cp-shortcut-capture-value {
+  color: var(--cp-title) !important;
+  font-size: 0.86rem !important;
+  font-weight: 700 !important;
+  line-height: 1.35 !important;
+}
+
+.cp-shortcut-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.cp-editor-tip {
+  min-height: 22px !important;
+  padding: 2px 2px 0 !important;
+  text-align: center !important;
+  line-height: 1.5 !important;
+  white-space: normal !important;
+}
+
+.cp-library-list-card {
+  display: grid !important;
+  gap: 10px !important;
+  padding: 10px !important;
+}
+
+.cp-library-page-indicator {
+  color: var(--cp-text-muted) !important;
+  font-size: 0.72rem !important;
+}
+
+.cp-library-page-indicator {
+  min-width: 42px !important;
+  text-align: center !important;
+}
+
+.cp-library-list {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)) !important;
+  gap: 8px !important;
+  align-content: start !important;
+  border-radius: 14px !important;
+}
+
+.cp-inline-tip.cp-tip-ok {
+  color: var(--cp-success) !important;
+}
+
+.cp-inline-tip.cp-tip-warn {
+  color: var(--cp-warning) !important;
+}
+
+.cp-inline-tip.cp-tip-err {
+  color: var(--cp-danger) !important;
+}
+
+.cp-toggle-group {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-height: 40px !important;
+  padding: 0 12px !important;
+  border: 1px solid var(--cp-border) !important;
+  border-radius: 12px !important;
+  background: var(--cp-surface) !important;
+}
+
+.cp-toggle {
+  position: relative !important;
+  display: inline-flex !important;
+  width: 38px !important;
+  height: 22px !important;
+}
+
+.cp-toggle input {
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.cp-toggle-slider {
+  position: absolute !important;
+  inset: 0 !important;
+  border-radius: 999px !important;
+  background: rgba(148, 163, 184, 0.28) !important;
+  transition:
+    background 160ms ease,
+    box-shadow 160ms ease !important;
+}
+
+.cp-toggle-slider::before {
+  content: "" !important;
+  position: absolute !important;
+  width: 16px !important;
+  height: 16px !important;
+  left: 3px !important;
+  top: 3px !important;
+  border-radius: 50% !important;
+  background: #fff !important;
+  transition: transform 160ms ease !important;
+}
+
+.cp-toggle input:checked + .cp-toggle-slider {
+  background: var(--cp-toggle-on, var(--cp-accent)) !important;
+}
+
+.cp-toggle input:checked + .cp-toggle-slider::before {
+  transform: translateX(16px) !important;
+}
+
+.cp-toggle input:focus-visible + .cp-toggle-slider {
+  outline: none !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--cp-accent) 22%, transparent) !important;
+}
+
+.cp-orch-row.is-enabled .cp-toggle {
+  --cp-toggle-on: var(--cp-orch-color);
+}
+
+.cp-footer {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  padding: 12px 20px 16px !important;
+  border-top: 1px solid var(--cp-border) !important;
+  color: var(--cp-text-muted) !important;
+  font-size: 0.74rem !important;
+}
+
+.cp-status {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  color: var(--cp-success) !important;
+}
+
+.cp-status.is-disabled {
+  color: var(--cp-warning) !important;
+}
+
+.cp-dot {
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 50% !important;
+  background: currentColor !important;
+}
+
+.cp-about-hero,
+.cp-about-feature,
+.cp-about-section {
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.cp-about-hero {
+  display: grid !important;
+  gap: 12px !important;
+  padding: 18px !important;
+  border-color: color-mix(in srgb, var(--cp-accent) 28%, var(--cp-border)) !important;
+  background:
+    radial-gradient(circle at top right, color-mix(in srgb, var(--cp-accent) 20%, transparent), transparent 38%),
+    linear-gradient(180deg, color-mix(in srgb, var(--cp-surface) 94%, transparent), var(--cp-surface)) !important;
+}
+
+.cp-about-kicker {
+  color: var(--cp-accent-strong) !important;
+  font-size: 0.68rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+}
+
+.cp-about-name {
+  font-size: 1.2rem !important;
+  line-height: 1.1 !important;
+}
+
+.cp-about-badges,
+.cp-about-permissions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+}
+
+.cp-about-badge,
+.cp-about-permission {
+  display: inline-flex !important;
+  align-items: center !important;
+  min-height: 28px !important;
+  padding: 0 10px !important;
+  border-radius: 999px !important;
+  border: 1px solid color-mix(in srgb, var(--cp-accent) 24%, var(--cp-border)) !important;
+  background: color-mix(in srgb, var(--cp-accent) 10%, var(--cp-surface)) !important;
+  color: var(--cp-title) !important;
+  font-size: 0.7rem !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+}
+
+.cp-about-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+}
+
+.cp-about-feature {
+  display: grid !important;
+  gap: 8px !important;
+  min-height: 148px !important;
+  padding: 14px !important;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--cp-surface-soft) 92%, transparent),
+    color-mix(in srgb, var(--cp-surface) 88%, transparent)
+  ) !important;
+}
+
+.cp-about-feature-title,
+.cp-about-section-title {
+  color: var(--cp-title) !important;
+  font-size: 0.84rem !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+}
+
+.cp-about-feature-desc,
+.cp-about-section-desc,
+.cp-about-list-item {
+  color: var(--cp-text-soft) !important;
+  font-size: 0.76rem !important;
+  line-height: 1.65 !important;
+}
+
+.cp-about-section {
+  display: grid !important;
+  gap: 10px !important;
+}
+
+.cp-about-list {
+  display: grid !important;
+  gap: 10px !important;
+}
+
+.cp-about-list-item {
+  padding: 10px 12px !important;
+  border: 1px solid var(--cp-border) !important;
+  border-radius: 13px !important;
+  background: color-mix(in srgb, var(--cp-surface-soft) 80%, transparent) !important;
+}
+

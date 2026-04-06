@@ -1,0 +1,1219 @@
+.cp-home-shell,
+.cp-library-shell,
+.cp-orch-shell,
+.cp-editor-shell,
+.cp-subview-shell,
+.cp-about-shell {
+  display: grid !important;
+  gap: 14px !important;
+}
+
+.cp-orch-topbar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+}
+
+.cp-orch-list-card {
+  padding: 12px !important;
+}
+
+.cp-orch-list {
+  display: grid !important;
+  gap: 10px !important;
+}
+
+.cp-orch-row-shell {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 8px !important;
+}
+
+.cp-orch-row {
+  --cp-orch-color: var(--cp-accent);
+  display: grid !important;
+  grid-template-columns: 38px minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 12px !important;
+  border: 1px solid var(--cp-border) !important;
+  border-radius: 16px !important;
+  background: var(--cp-surface-soft) !important;
+  cursor: pointer !important;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease !important;
+}
+
+.cp-orch-row:hover {
+  border-color: var(--cp-border-strong) !important;
+  background: color-mix(in srgb, var(--cp-hover) 38%, var(--cp-surface-soft)) !important;
+}
+
+.cp-orch-row.is-awaiting-connection {
+  background: color-mix(in srgb, var(--cp-surface-soft) 92%, transparent) !important;
+}
+
+.cp-orch-row:focus-visible {
+  outline: none !important;
+  border-color: color-mix(in srgb, var(--cp-accent) 38%, var(--cp-border-strong)) !important;
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--cp-accent) 18%, transparent),
+    0 10px 20px rgba(15, 23, 42, 0.06) !important;
+}
+
+.cp-orch-row.is-active {
+  border-color: color-mix(in srgb, var(--cp-accent) 44%, var(--cp-border-strong)) !important;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--cp-accent) 26%, transparent),
+    0 14px 26px rgba(15, 23, 42, 0.1),
+    inset 0 0 0 1px color-mix(in srgb, var(--cp-accent) 12%, transparent) !important;
+}
+
+.cp-orch-row-index {
+  width: 38px !important;
+  height: 38px !important;
+  position: relative !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 12px !important;
+  border: 1px solid var(--cp-border-strong) !important;
+  background: color-mix(in srgb, var(--cp-surface) 88%, transparent) !important;
+  color: var(--cp-title) !important;
+  font-size: 0.84rem !important;
+  font-weight: 700 !important;
+  overflow: hidden !important;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    color 180ms ease !important;
+}
+
+.cp-orch-row-index-icon {
+  position: absolute !important;
+  inset: 1px !important;
+  width: calc(100% - 2px) !important;
+  height: calc(100% - 2px) !important;
+  opacity: 0.25 !important;
+  transform: none !important;
+  object-fit: cover !important;
+  border-radius: inherit !important;
+  filter: saturate(0.92) contrast(0.96) !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+}
+
+.cp-orch-row-index-text {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.cp-orch-row.is-enabled .cp-orch-row-index {
+  border-color: var(--cp-orch-color) !important;
+  background: color-mix(
+    in srgb,
+    var(--cp-orch-color) 30%,
+    var(--cp-surface)
+  ) !important;
+}
+
+.cp-orch-row.is-active .cp-orch-row-index {
+  border-color: color-mix(in srgb, var(--cp-accent) 54%, var(--cp-border-strong)) !important;
+  background: color-mix(in srgb, var(--cp-accent) 22%, var(--cp-surface)) !important;
+}
+
+.cp-orch-row-main {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 4px !important;
+  align-content: center !important;
+}
+
+.cp-orch-row.is-awaiting-connection .cp-orch-row-index {
+  border-style: dashed !important;
+  opacity: 0.72 !important;
+}
+
+.cp-orch-row-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 6px !important;
+  justify-self: end !important;
+  flex-wrap: nowrap !important;
+  flex: 0 0 auto !important;
+}
+
+.cp-orch-row-host {
+  color: var(--cp-title) !important;
+  font-size: 0.9rem !important;
+  font-weight: 700 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.cp-orch-row-title {
+  color: var(--cp-text-soft) !important;
+  font-size: 0.74rem !important;
+  line-height: 1.45 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.cp-orch-row-toggle {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+}
+
+.cp-orch-row-toggle-wrap {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
+  padding: 0 !important;
+  cursor: pointer !important;
+}
+
+.cp-orch-tools-trigger,
+.cp-orch-system-trigger {
+  width: 32px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  border: 1px solid var(--cp-border) !important;
+  border-radius: 9px !important;
+  background: color-mix(in srgb, var(--cp-surface-soft) 96%, transparent) !important;
+  color: var(--cp-text-soft) !important;
+  cursor: pointer !important;
+  position: relative !important;
+  flex: 0 0 32px !important;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease !important;
+}
+
+.cp-orch-tools-trigger:hover,
+.cp-orch-system-trigger:hover {
+  border-color: color-mix(in srgb, var(--cp-orch-color) 44%, var(--cp-border-strong)) !important;
+  background: color-mix(in srgb, var(--cp-orch-color) 12%, var(--cp-surface)) !important;
+  color: var(--cp-title) !important;
+}
+
+.cp-orch-tools-trigger:focus-visible,
+.cp-orch-system-trigger:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--cp-accent) 36%, transparent) !important;
+  outline-offset: 2px !important;
+}
+
+.cp-orch-tools-trigger.is-active,
+.cp-orch-tools-trigger.is-open,
+.cp-orch-system-trigger.is-active,
+.cp-orch-system-trigger.is-open {
+  border-color: color-mix(in srgb, var(--cp-orch-color) 50%, var(--cp-border-strong)) !important;
+  background: color-mix(in srgb, var(--cp-orch-color) 16%, var(--cp-surface)) !important;
+  color: color-mix(in srgb, var(--cp-orch-color) 70%, var(--cp-title)) !important;
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.08) !important;
+}
+
+.cp-orch-tools-trigger-label {
+  color: inherit !important;
+}
+
+.cp-orch-tools-trigger-count {
+  min-width: 30px !important;
+  height: 20px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 6px !important;
+  border-radius: 999px !important;
+  background: color-mix(in srgb, var(--cp-surface) 76%, transparent) !important;
+  color: inherit !important;
+  font-size: 0.66rem !important;
+}
+
+.cp-orch-tools-trigger svg,
+.cp-orch-system-trigger svg {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+.cp-orch-tools-trigger-dot,
+.cp-orch-system-trigger-dot {
+  position: absolute !important;
+  top: 5px !important;
+  right: 5px !important;
+  width: 7px !important;
+  height: 7px !important;
+  border-radius: 999px !important;
+  background: #dc2626 !important;
+  box-shadow: 0 0 0 1.5px var(--cp-surface-soft) !important;
+}
+
+.cp-orch-tools-panel,
+.cp-orch-tools-empty-card,
+.cp-orch-tools-add-list,
+.cp-orch-tools-add-item,
+.cp-orch-tools-server-list,
+.cp-orch-tools-server,
+.cp-orch-tools-toolbar,
+.cp-orch-tools-steps,
+.cp-orch-tools-panel-head,
+.cp-orch-tools-server-head,
+.cp-orch-tools-server-meta,
+.cp-orch-tools-server-actions {
+  display: grid !important;
+  gap: 10px !important;
+}
+
+.cp-orch-tools-panel {
+  grid-template-columns: minmax(0, 1fr) !important;
+  padding: 12px !important;
+  border: 1px solid color-mix(in srgb, var(--cp-orch-color) 30%, var(--cp-border)) !important;
+  border-radius: 16px !important;
+  background: color-mix(in srgb, var(--cp-surface-soft) 96%, transparent) !important;
+  box-shadow: var(--cp-shadow) !important;
+}
+
+.cp-orch-tools-panel-head,
+.cp-orch-tools-server-head,
+.cp-orch-tools-add-item {
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: start !important;
+}
+
+.cp-orch-tools-steps {
+  grid-template-columns: repeat(2, minmax(0, max-content)) !important;
+  gap: 8px !important;
+}
+
+.cp-orch-tools-step-pill {
+  min-height: 24px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 10px !important;
+  border-radius: 999px !important;
+  border: 1px solid var(--cp-border) !important;
+  background: color-mix(in srgb, var(--cp-surface) 84%, transparent) !important;
+  color: var(--cp-text-soft) !important;
+  font-size: 0.68rem !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+}
+
+.cp-orch-tools-toolbar {
+  grid-template-columns: auto minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 8px !important;
+  position: relative !important;
+}
+
+.cp-orch-tools-add-trigger,
+.cp-orch-tools-add-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  min-height: 32px !important;
+  padding: 0 12px !important;
+  border-radius: 11px !important;
+  border: 1px solid var(--cp-border) !important;
+  background: color-mix(in srgb, var(--cp-surface) 92%, transparent) !important;
+  color: var(--cp-text-soft) !important;
+  font-size: 0.7rem !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease !important;
+}
+
+.cp-orch-tools-add-trigger {
+  width: 28px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
+  padding: 0 !important;
+  border-radius: 9px !important;
+  justify-self: start !important;
+}
+
+.cp-orch-tools-add-trigger svg {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+.cp-orch-tools-toolbar-hint {
+  color: var(--cp-text-muted) !important;
+  font-size: 0.7rem !important;
+  line-height: 1.45 !important;
+  min-width: 0 !important;
+}
+
+.cp-orch-tools-add-trigger.is-open,
+.cp-orch-tools-add-trigger:hover,
+.cp-orch-tools-add-btn:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--cp-orch-color) 42%, var(--cp-border-strong)) !important;
+  background: color-mix(in srgb, var(--cp-orch-color) 12%, var(--cp-surface)) !important;
+  color: var(--cp-title) !important;
+}
+
+.cp-orch-tools-add-trigger:focus-visible,
+.cp-orch-tools-add-btn:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--cp-accent) 36%, transparent) !important;
+  outline-offset: 2px !important;
+}
+
+.cp-orch-tools-add-btn:disabled {
+  opacity: 0.56 !important;
+  cursor: not-allowed !important;
+}
+
+.cp-orch-tools-add-list,
+.cp-orch-tools-server-list {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+.cp-orch-tools-add-list {
+  max-height: min(52vh, 420px) !important;
+  overflow: auto !important;
+  padding-right: 2px !important;
+}
+
+.cp-orch-tools-add-dialog-wrap,
+.cp-orch-system-dialog-wrap {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 40 !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 20px !important;
+}
+
+.cp-orch-tools-add-backdrop,
+.cp-orch-system-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  background: var(--cp-panel) !important;
+  opacity: 0.97 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.cp-orch-tools-add-dialog,
+.cp-orch-system-dialog {
+  position: relative !important;
+  width: min(420px, calc(100vw - 32px)) !important;
+  max-height: min(70vh, 560px) !important;
+  display: grid !important;
+  gap: 10px !important;
+  padding: 12px !important;
+  border: 1px solid color-mix(in srgb, var(--cp-orch-color) 24%, var(--cp-border-strong)) !important;
+  border-radius: 16px !important;
+  background: var(--cp-surface) !important;
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.18) !important;
+  overflow: hidden !important;
+  z-index: 1 !important;
+}
+
+.cp-orch-tools-add-dialog-head,
+.cp-orch-system-dialog-head {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+}
+
+.cp-orch-tools-add-dialog-title,
+.cp-orch-system-dialog-title {
+  color: var(--cp-title) !important;
+  font-size: 0.78rem !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+}
+
+.cp-orch-tools-add-close,
+.cp-orch-system-close {
+  width: 26px !important;
+  min-width: 26px !important;
+  height: 26px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  border: 1px solid var(--cp-border) !important;
+  border-radius: 8px !important;
+  background: color-mix(in srgb, var(--cp-surface-soft) 92%, transparent) !important;
+  color: var(--cp-text-soft) !important;
+  cursor: pointer !important;
+}
+
+.cp-orch-tools-add-close svg,
+.cp-orch-system-close svg {
+  width: 12px !important;
+  height: 12px !important;
+}
+
+.cp-orch-tools-add-close:disabled,
+.cp-orch-system-close:disabled {
+  opacity: 0.56 !important;
+  cursor: not-allowed !important;
+}
+
+.cp-orch-system-dialog {
+  width: min(500px, calc(100vw - 32px)) !important;
+  max-height: min(76vh, 620px) !important;
+  gap: 12px !important;
+}
+
+.cp-orch-system-dialog-head {
+  align-items: flex-start !important;
+}
+
+.cp-orch-system-dialog-title-wrap,
+.cp-orch-system-field,
+.cp-orch-system-empty-card,
+.cp-orch-system-option-main {
+  display: grid !important;
+  gap: 6px !important;
+}
+
+.cp-orch-system-dialog-title-wrap {
+  min-width: 0 !important;
+  gap: 4px !important;
+}
+
+.cp-orch-system-dialog-host {
+  color: var(--cp-text-muted) !important;
+  font-size: 0.68rem !important;
+  line-height: 1.35 !important;
+  word-break: break-all !important;
+}
+
+.cp-orch-system-dialog-head-actions {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.cp-orch-system-add-btn {
+  min-height: 28px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  padding: 0 10px !important;
+  border: 1px solid var(--cp-border) !important;
+  border-radius: 10px !important;
+  background: color-mix(in srgb, var(--cp-surface-soft) 86%, var(--cp-surface)) !important;
+  color: var(--cp-text-soft) !important;
+  font-size: 0.7rem !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    color 180ms ease !important;
+}
+
+.cp-orch-system-add-btn:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--cp-orch-color) 44%, var(--cp-border-strong)) !important;
+  background: color-mix(in srgb, var(--cp-orch-color) 12%, var(--cp-surface)) !important;
+  color: var(--cp-title) !important;
+}
+
+.cp-orch-system-add-btn:focus-visible,
+.cp-orch-system-option-trigger:focus-visible,
+.cp-orch-system-option-mark:focus-visible,
+.cp-orch-system-option-icon:focus-visible,
+.cp-orch-system-close:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--cp-accent) 36%, transparent) !important;
+  outline-offset: 2px !important;
+}
+
+.cp-orch-system-add-btn:disabled {
+  opacity: 0.56 !important;
+  cursor: not-allowed !important;
+}
+
+.cp-orch-system-add-btn svg {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+.cp-orch-system-label {
+  color: var(--cp-title) !important;
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+}
+
+.cp-orch-system-input,
+.cp-orch-system-textarea {
+  width: 100% !important;
+  padding: 12px !important;
+  border: 1px solid var(--cp-border) !important;
+  border-radius: 12px !important;
+  background: color-mix(in srgb, var(--cp-surface-soft) 80%, var(--cp-surface)) !important;
+  color: var(--cp-title) !important;
+  font: inherit !important;
+  font-size: 0.78rem !important;
+  line-height: 1.58 !important;
+}
+
+.cp-orch-system-input {
+  min-height: 42px !important;
+}
+
+.cp-orch-system-textarea {
+  min-height: 180px !important;
+  resize: vertical !important;
+}
+
+.cp-orch-system-input::placeholder,
+.cp-orch-system-textarea::placeholder {
+  color: var(--cp-text-muted) !important;
+}
+
+.cp-orch-system-input:focus-visible,
+.cp-orch-system-textarea:focus-visible {
+  outline: none !important;
+  border-color: color-mix(in srgb, var(--cp-orch-color) 42%, var(--cp-border-strong)) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cp-orch-color) 10%, transparent) !important;
+}
+
+.cp-orch-system-selection-note {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 10px 12px !important;
+  border: 1px solid color-mix(in srgb, var(--cp-orch-color) 18%, var(--cp-border)) !important;
+  border-radius: 12px !important;
+  background: color-mix(in srgb, var(--cp-orch-color) 7%, var(--cp-surface)) !important;
+  color: var(--cp-text-soft) !important;
+  font-size: 0.69rem !important;
+  font-weight: 600 !important;
+  line-height: 1.45 !important;
+}
+
+.cp-orch-system-list,
+.cp-orch-system-empty-card {
+  display: grid !important;
+  gap: 10px !important;
+}
+
+.cp-orch-system-list {
+  max-height: min(48vh, 420px) !important;
+  overflow: auto !important;
+  padding-right: 2px !important;
+}
+
+.cp-orch-system-option {
+  position: relative !important;
+  width: 100% !important;
+  border: 1px solid var(--cp-border) !important;
+  border-radius: 16px !important;
+  background: color-mix(in srgb, var(--cp-surface-soft) 72%, var(--cp-surface)) !important;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease !important;
+}
+
+.cp-orch-system-option:hover,
+.cp-orch-system-option.is-selected {
+  border-color: color-mix(in srgb, var(--cp-orch-color) 42%, var(--cp-border-strong)) !important;
+  background: color-mix(in srgb, var(--cp-orch-color) 11%, var(--cp-surface)) !important;
+  box-shadow: 0 12px 22px rgba(15, 23, 42, 0.08) !important;
+}
+
+.cp-orch-system-option-trigger {
+  width: 100% !important;
+  min-width: 0 !important;
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 14px 72px 14px 14px !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: inherit !important;
+  cursor: pointer !important;
+  text-align: left !important;
+}
+
+.cp-orch-system-option-trigger:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.72 !important;
+}
+
+.cp-orch-system-option-actions {
+  position: absolute !important;
+  top: 10px !important;
+  right: 10px !important;
+  z-index: 2 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.cp-orch-system-option-main {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 6px !important;
+}
+
+.cp-orch-system-option-head {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+  flex-wrap: wrap !important;
+}
+
+.cp-orch-system-option-name {
+  color: var(--cp-title) !important;
+  font-size: 0.8rem !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+}
+
+.cp-orch-system-option-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  min-height: 20px !important;
+  padding: 0 8px !important;
+  border-radius: 999px !important;
+  background: color-mix(in srgb, var(--cp-orch-color) 16%, var(--cp-surface)) !important;
+  color: color-mix(in srgb, var(--cp-orch-color) 80%, var(--cp-title)) !important;
+  font-size: 0.64rem !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+}
+
+.cp-orch-system-option-preview,
+.cp-orch-system-empty {
+  color: var(--cp-text-soft) !important;
+  font-size: 0.7rem !important;
+  line-height: 1.5 !important;
+}
+
+.cp-orch-system-option-preview {
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  word-break: break-word !important;
+}
+
+.cp-orch-system-option-mark {
+  --cp-orch-system-mark-fill: color-mix(in srgb, var(--cp-orch-color) 88%, white);
+  --cp-orch-system-mark-check: color-mix(in srgb, var(--cp-title) 92%, white);
+  position: relative !important;
+  width: 28px !important;
+  min-width: 28px !important;
+  height: 28px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  border-radius: 999px !important;
+  border: 2px solid color-mix(in srgb, var(--cp-border-strong) 72%, var(--cp-border)) !important;
+  background: color-mix(in srgb, white 90%, var(--cp-surface)) !important;
+  color: var(--cp-title) !important;
+  box-shadow:
+    inset 0 0 0 4px color-mix(in srgb, white 80%, var(--cp-surface)),
+    0 2px 6px rgba(15, 23, 42, 0.05) !important;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease !important;
+}
+
+#chat-plus-root:not(.light-mode) .cp-orch-system-option-mark {
+  --cp-orch-system-mark-fill: color-mix(in srgb, var(--cp-orch-color) 78%, var(--cp-title));
+  --cp-orch-system-mark-check: color-mix(in srgb, white 94%, var(--cp-title));
+}
+
+.cp-orch-system-option-mark-dot {
+  width: 8px !important;
+  height: 4px !important;
+  border-left: 2px solid var(--cp-orch-system-mark-check) !important;
+  border-bottom: 2px solid var(--cp-orch-system-mark-check) !important;
+  background: transparent !important;
+  transform: translateY(-1px) rotate(-45deg) scale(0.55) !important;
+  transform-origin: center !important;
+  opacity: 0 !important;
+  transition:
+    transform 180ms ease,
+    opacity 180ms ease,
+    border-color 180ms ease !important;
+}
+
+.cp-orch-system-option-mark.is-selected,
+.cp-orch-system-option.is-selected .cp-orch-system-option-mark {
+  border-color: color-mix(in srgb, var(--cp-orch-color) 84%, var(--cp-border-strong)) !important;
+  background: var(--cp-orch-system-mark-fill) !important;
+  box-shadow:
+    0 0 0 5px color-mix(in srgb, var(--cp-orch-color) 10%, transparent),
+    0 4px 10px rgba(15, 23, 42, 0.08) !important;
+}
+
+.cp-orch-system-option-mark.is-selected .cp-orch-system-option-mark-dot,
+.cp-orch-system-option.is-selected .cp-orch-system-option-mark-dot {
+  transform: translateY(-1px) rotate(-45deg) scale(1) !important;
+  opacity: 1 !important;
+}
+
+.cp-orch-system-option-icon {
+  width: 26px !important;
+  min-width: 26px !important;
+  height: 26px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  border: 1px solid var(--cp-border) !important;
+  border-radius: 8px !important;
+  background: color-mix(in srgb, var(--cp-surface) 88%, transparent) !important;
+  color: var(--cp-text-soft) !important;
+  cursor: pointer !important;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    color 180ms ease !important;
+}
+
+.cp-orch-system-option-icon:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--cp-orch-color) 42%, var(--cp-border-strong)) !important;
+  background: color-mix(in srgb, var(--cp-orch-color) 12%, var(--cp-surface)) !important;
+  color: var(--cp-title) !important;
+}
+
+.cp-orch-system-option-icon.is-close {
+  border-radius: 999px !important;
+  border-color: color-mix(in srgb, #dc2626 38%, var(--cp-border)) !important;
+  background: color-mix(in srgb, #dc2626 10%, var(--cp-surface)) !important;
+  color: #dc2626 !important;
+}
+
+.cp-orch-system-option-icon.is-danger:hover:not(:disabled) {
+  border-color: color-mix(in srgb, #dc2626 62%, var(--cp-border-strong)) !important;
+  background: color-mix(in srgb, #dc2626 14%, var(--cp-surface)) !important;
+  color: #b91c1c !important;
+}
+
+.cp-orch-system-option-icon:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.6 !important;
+}
+
+.cp-orch-system-option-icon svg {
+  width: 12px !important;
+  height: 12px !important;
+}
+
+.cp-orch-system-delete-wrap {
+  position: relative !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+.cp-orch-system-delete-popover {
+  position: absolute !important;
+  right: 0 !important;
+  top: calc(100% + 8px) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 6px 8px !important;
+  border: 1px solid color-mix(in srgb, #dc2626 20%, var(--cp-border)) !important;
+  border-radius: 10px !important;
+  background: color-mix(in srgb, var(--cp-surface) 96%, white) !important;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.12) !important;
+  white-space: nowrap !important;
+  z-index: 2 !important;
+}
+
+.cp-orch-system-delete-popover-text {
+  color: var(--cp-title) !important;
+  font-size: 0.68rem !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+}
+
+.cp-orch-system-error {
+  width: 100% !important;
+  min-height: 0 !important;
+}
+
+.cp-orch-system-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+}
+
+.cp-orch-tools-add-item,
+.cp-orch-tools-server {
+  width: 100% !important;
+}
+
+.cp-orch-tools-add-item {
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-height: 40px !important;
+  padding: 8px 10px !important;
+  border: 1px solid var(--cp-border) !important;
+  border-radius: 12px !important;
+  background: color-mix(in srgb, var(--cp-surface-soft) 70%, var(--cp-surface)) !important;
+}
+
+.cp-orch-tools-add-item.is-disabled {
+  opacity: 0.78 !important;
+}
+
+.cp-orch-tools-add-item.is-selected {
+  border-color: color-mix(in srgb, var(--cp-orch-color) 34%, var(--cp-border-strong)) !important;
+  background: color-mix(in srgb, var(--cp-orch-color) 8%, var(--cp-surface)) !important;
+}
+
+.cp-orch-tools-add-item-copy {
+  min-width: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  white-space: nowrap !important;
+}
+
+.cp-orch-tools-add-item-name {
+  color: var(--cp-title) !important;
+  font-size: 0.78rem !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  flex: 0 1 auto !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.cp-orch-tools-add-item-count {
+  color: var(--cp-text-muted) !important;
+  font-size: 0.68rem !important;
+  line-height: 1.2 !important;
+  flex: 0 0 auto !important;
+}
+
+.cp-orch-tools-add-item-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 6px !important;
+  flex-wrap: nowrap !important;
+  flex: 0 0 auto !important;
+}
+
+.cp-orch-tools-add-toggle {
+  width: 24px !important;
+  min-width: 24px !important;
+  height: 24px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  cursor: pointer !important;
+}
+
+.cp-orch-tools-add-toggle-box {
+  width: 16px !important;
+  height: 16px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: 1px solid var(--cp-border-strong) !important;
+  border-radius: 5px !important;
+  background: var(--cp-surface) !important;
+  color: transparent !important;
+  font-size: 0.78rem !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease !important;
+}
+
+.cp-orch-tools-add-toggle.is-checked .cp-orch-tools-add-toggle-box {
+  border-color: color-mix(in srgb, var(--cp-success) 70%, var(--cp-success)) !important;
+  background: color-mix(in srgb, var(--cp-success) 18%, var(--cp-surface)) !important;
+  color: var(--cp-success) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cp-success) 10%, transparent) !important;
+}
+
+.cp-orch-tools-add-toggle:disabled {
+  opacity: 0.48 !important;
+  cursor: not-allowed !important;
+}
+
+.cp-orch-tools-empty-card {
+  align-items: flex-start !important;
+}
+
+.cp-orch-tools-empty {
+  width: 100% !important;
+  min-height: 0 !important;
+}
+
+.cp-orch-tools-server-list {
+  gap: 10px !important;
+}
+
+.cp-orch-tools-server {
+  padding: 10px 12px !important;
+  border: 1px solid var(--cp-border) !important;
+  border-radius: 14px !important;
+  background: color-mix(in srgb, var(--cp-surface) 92%, transparent) !important;
+}
+
+.cp-orch-tools-server-main {
+  min-width: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: nowrap !important;
+}
+
+.cp-orch-tools-server-title {
+  color: var(--cp-title) !important;
+  font-size: 0.86rem !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  min-width: 0 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.cp-orch-tools-server-badge {
+  flex: 0 0 auto !important;
+  min-width: 18px !important;
+  height: 18px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 6px !important;
+  border-radius: 999px !important;
+  border: 1px solid color-mix(in srgb, var(--cp-border-strong) 72%, transparent) !important;
+  background: color-mix(in srgb, var(--cp-border-strong) 44%, transparent) !important;
+  color: var(--cp-title) !important;
+  font-size: 0.64rem !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+}
+
+#chat-plus-root:not(.light-mode) .cp-orch-tools-server-badge {
+  color: #f3eee7 !important;
+  background: color-mix(in srgb, var(--cp-border-strong) 54%, transparent) !important;
+  border-color: color-mix(in srgb, var(--cp-border-strong) 90%, transparent) !important;
+}
+
+.cp-orch-tools-server-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 6px !important;
+  flex-wrap: nowrap !important;
+  margin-left: auto !important;
+}
+
+.cp-orch-tools-remove-btn {
+  flex: 0 0 auto !important;
+}
+
+.cp-orch-tools-server-check {
+  position: relative !important;
+  width: 18px !important;
+  height: 18px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 18px !important;
+  cursor: pointer !important;
+}
+
+.cp-orch-tools-server-check-input {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  opacity: 0 !important;
+  cursor: pointer !important;
+}
+
+.cp-orch-tools-server-check-box {
+  position: relative !important;
+  width: 16px !important;
+  height: 16px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: 1px solid var(--cp-border-strong) !important;
+  border-radius: 5px !important;
+  background: var(--cp-surface) !important;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease !important;
+}
+
+.cp-orch-tools-server-check-box::before,
+.cp-orch-tools-server-check-box::after {
+  content: "" !important;
+  position: absolute !important;
+  opacity: 0 !important;
+}
+
+.cp-orch-tools-server-check-box::before {
+  top: 50% !important;
+  left: 50% !important;
+  width: 8px !important;
+  height: 5px !important;
+  border-left: 2px solid var(--cp-success) !important;
+  border-bottom: 2px solid var(--cp-success) !important;
+  transform: translate(-50%, -58%) rotate(-45deg) !important;
+  transform-origin: center !important;
+}
+
+.cp-orch-tools-server-check-box::after {
+  top: 50% !important;
+  left: 50% !important;
+  width: 8px !important;
+  height: 2px !important;
+  border-radius: 999px !important;
+  background: var(--cp-success) !important;
+  transform: translate(-50%, -50%) !important;
+}
+
+.cp-orch-tools-server-check-input:checked + .cp-orch-tools-server-check-box {
+  border-color: color-mix(in srgb, var(--cp-success) 72%, var(--cp-success)) !important;
+  background: color-mix(in srgb, var(--cp-success) 18%, var(--cp-surface)) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cp-success) 10%, transparent) !important;
+}
+
+.cp-orch-tools-server-check-input:checked + .cp-orch-tools-server-check-box::before {
+  opacity: 1 !important;
+}
+
+.cp-orch-tools-server-check-input:indeterminate + .cp-orch-tools-server-check-box {
+  border-color: color-mix(in srgb, var(--cp-success) 72%, var(--cp-success)) !important;
+  background: color-mix(in srgb, var(--cp-success) 18%, var(--cp-surface)) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cp-success) 10%, transparent) !important;
+}
+
+.cp-orch-tools-server-check-input:indeterminate + .cp-orch-tools-server-check-box::after {
+  opacity: 1 !important;
+}
+
+.cp-orch-tools-server-check.is-disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
+
+.cp-orch-tools-tool-list {
+  display: grid !important;
+  gap: 8px !important;
+}
+
+.cp-orch-tools-tool-row {
+  display: grid !important;
+  grid-template-columns: 20px minmax(0, 1fr) !important;
+  gap: 10px !important;
+  align-items: start !important;
+  padding: 10px 12px !important;
+  border: 1px solid var(--cp-border) !important;
+  border-radius: 12px !important;
+  background: color-mix(in srgb, var(--cp-surface-soft) 54%, var(--cp-surface)) !important;
+}
+
+.cp-orch-tools-tool-row.is-enabled {
+  border-color: color-mix(in srgb, var(--cp-success) 34%, var(--cp-border-strong)) !important;
+  background: color-mix(in srgb, var(--cp-success) 7%, var(--cp-surface)) !important;
+}
+
+.cp-orch-tools-tool-copy {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 3px !important;
+}
+
+.cp-orch-tools-tool-name {
+  color: var(--cp-title) !important;
+  font-size: 0.8rem !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+}
+
+.cp-orch-tools-tool-desc {
+  color: var(--cp-text-soft) !important;
+  font-size: 0.72rem !important;
+  line-height: 1.35 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.cp-orch-row[data-group-color="blue"] {
+  --cp-orch-color: var(--cp-group-blue);
+}
+
+.cp-orch-row[data-group-color="orange"] {
+  --cp-orch-color: var(--cp-group-orange);
+}
+
+.cp-orch-row[data-group-color="green"] {
+  --cp-orch-color: var(--cp-group-green);
+}
+
+.cp-orch-row[data-group-color="pink"] {
+  --cp-orch-color: var(--cp-group-pink);
+}
+
+.cp-orch-row[data-group-color="cyan"] {
+  --cp-orch-color: var(--cp-group-cyan);
+}
+
+.cp-orch-row[data-group-color="red"] {
+  --cp-orch-color: var(--cp-group-red);
+}
+
+.cp-orch-row[data-group-color="purple"] {
+  --cp-orch-color: var(--cp-group-purple);
+}
+
+.cp-orch-row[data-group-color="yellow"] {
+  --cp-orch-color: var(--cp-group-yellow);
+}
+
