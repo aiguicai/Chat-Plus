@@ -73,7 +73,7 @@ export default function App() {
             <div className="cp-brand-meta">
               <div className="cp-title">Chat Plus</div>
               <div className="cp-version">
-                {`v${extensionVersion} · Open-source MCP orchestration`}
+                Make your ai chat smarter
               </div>
             </div>
           </div>

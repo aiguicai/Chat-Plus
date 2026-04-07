@@ -1,6 +1,10 @@
 # Chat Plus
 
 <p align="center">
+  English | <a href="./README.zh-CN.md">简体中文</a>
+</p>
+
+<p align="center">
   <img src="icons/icon128.png" alt="Chat Plus logo" width="96">
 </p>
 
@@ -20,6 +24,8 @@
   <a href="#code-mode-and-mcp-orchestration">Code Mode</a> •
   <a href="#development">Development</a>
 </p>
+
+<a id="overview"></a>
 
 ## Overview
 
@@ -60,23 +66,23 @@ The important part is that Chat Plus does not treat MCP as a one-shot transport 
 
 ```mermaid
 flowchart LR
-    A[AI Chat Website] --> B[Chat Plus Content Runtime]
-    B --> C[Enabled MCP Servers]
-    C --> D[Tool Discovery]
-    D --> E[Code Mode Manifest<br/>aliases + schemas]
-    E --> F[Sandbox Runtime]
-    F --> G[AI emits JavaScript<br/>calls tools.server.tool(args)]
-    G --> H[Sandbox bridge]
-    H --> I[Background MCP Client]
-    I --> J[MCP Transport<br/>SSE / Streamable HTTP]
-    J --> K[MCP Server]
+    A["AI Chat Website"] --> B["Chat Plus Content Runtime"]
+    B --> C["Enabled MCP Servers"]
+    C --> D["Tool Discovery"]
+    D --> E["Code Mode Manifest<br/>aliases + schemas"]
+    E --> F["Sandbox Runtime"]
+    F --> G["AI emits JavaScript<br/>tool calls"]
+    G --> H["Sandbox bridge"]
+    H --> I["Background MCP Client"]
+    I --> J["MCP Transport<br/>SSE / Streamable HTTP"]
+    J --> K["MCP Server"]
     K --> J
     J --> I
     I --> H
     H --> F
-    F --> L[Execution result]
+    F --> L["Execution result"]
     L --> B
-    B --> M[Continue conversation]
+    B --> M["Continue conversation"]
 ```
 
 Typical execution flow:
@@ -91,6 +97,8 @@ Typical execution flow:
 8. Results flow back to the sandbox first, then back to the chat conversation as execution output.
 
 This is the main distinction of Chat Plus: MCP tools are exposed as a programmable interface inside a controlled runtime, not just as opaque remote calls.
+
+<a id="getting-started"></a>
 
 ## Getting Started
 
@@ -160,6 +168,8 @@ http://127.0.0.1:8765/api/v2/mcp/<serverName>
 
 If MCP-Gateway exposes a dedicated skills endpoint, Chat Plus can consume it the same way as any other remote MCP server.
 
+<a id="site-adapters"></a>
+
 ## Site Adapters
 
 A site adapter is a single JavaScript script that must `return` an object with one required `meta` block and four required hooks:
@@ -222,6 +232,8 @@ The repository also includes migrated example adapters in `web_chat_js/` for Cha
 
 If you are developing support for a new website, start with the skill and live samples instead of guessing request paths, response fields, or selectors from the site name.
 
+<a id="code-mode-and-mcp-orchestration"></a>
+
 ## Code Mode and MCP Orchestration
 
 Code Mode gives the model a controlled JavaScript execution path for tool orchestration.
@@ -255,6 +267,8 @@ What Code Mode does not allow:
 - arbitrary third-party libraries
 
 This is the part of Chat Plus that turns MCP tools into something closer to a programmable runtime than a thin connector.
+
+<a id="development"></a>
 
 ## Development
 
