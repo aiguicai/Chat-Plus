@@ -341,7 +341,7 @@ function buildCallTemplate(ref: string, inputSchema: Record<string, unknown>) {
   return [`const result = await ${ref}(${argsText});`, "return result;"].join("\n");
 }
 
-function buildUsageNotes(tool: McpToolDescriptor, kind: CodeModeToolKind, summary: string) {
+function buildUsageNotes(tool: McpToolDescriptor, kind: CodeModeToolKind) {
   const notes: string[] = [];
   if (kind === "skill") {
     notes.push("这是 skill 接口。按描述中的工作流执行当前确定步骤，做完本轮就 return。");
@@ -363,10 +363,6 @@ function buildUsageNotes(tool: McpToolDescriptor, kind: CodeModeToolKind, summar
     notes.push("返回结构已声明；按字段直接取值，不要无意义二次包装。");
   } else {
     notes.push("返回结构未完全声明；先看 structuredContent，再看 content[].text，再看其他字段。");
-  }
-
-  if (summary) {
-    notes.push(`工具摘要: ${summary}`);
   }
 
   notes.push("默认走最短路径完成当前轮任务，不要加多余日志、校验、探测或通用封装。");
@@ -426,7 +422,7 @@ function buildToolArtifacts({
     outputSchemaText: formatSchemaText(outputSchema, "output"),
     annotations,
     callTemplate: buildCallTemplate(ref, inputSchema),
-    usageNotes: buildUsageNotes(tool, kind, summary),
+    usageNotes: buildUsageNotes(tool, kind),
   };
 
   return { manifestTool, doc };
@@ -502,14 +498,13 @@ export function buildCodeModeManifest(config: McpConfigStore): CodeModeManifest 
 
 function buildToolSpecPromptLines(docs: CodeModeToolDocItem[]) {
   if (!docs.length) {
-    return ["当前页面没有可用的 MCP 工具。"];
+    return ["当前环境没有可用接口。"];
   }
 
   const blocks = docs.map((doc) =>
     [
       `接口: ${doc.ref}`,
       `类型: ${doc.kind}`,
-      `摘要: ${doc.summary || doc.ref}`,
       `描述: ${doc.description || "(empty)"}`,
       "输入参数结构:",
       doc.inputSchemaText,
@@ -522,9 +517,9 @@ function buildToolSpecPromptLines(docs: CodeModeToolDocItem[]) {
   );
 
   return [
-    "下面已经直接给出当前沙箱里可调用的完整 JS 接口规格。把它们当作已经存在的异步函数来写代码，直接选接口、传参数、拿结果，不要先写“查看工具/查看说明/探测环境”之类的元步骤。",
+    "下面直接给出当前沙箱里可调用的完整 JS 接口规格。把它们当作已经存在的异步函数来写代码，直接选接口、传参数、拿结果，不要先写“查看接口/查看说明/探测环境”之类的元步骤。可用接口如下。【",
     blocks.join("\n\n"),
-    "以上就是你当前允许调用的完整接口集合；如果这里没有，就不要假设存在其他隐藏工具。",
+    "】以上就是你当前允许调用的完整接口集合；如果这里没有，就不要假设存在其他隐藏工具。",
   ];
 }
 
@@ -540,11 +535,12 @@ export function buildCodeModeSystemInstruction(config: McpConfigStore) {
   const docs = manifest.docs;
   const toolSpecLines = buildToolSpecPromptLines(docs);
   const content = [
-    "你现在处于 Chat Plus Code Mode 执行环境。",
-    "你拿到的不是 MCP transport 文档，而是一组已经映射好的 JS 异步接口。你的职责不是解释工具，也不是设计框架，而是直接写最短可行代码调用这些接口，完成当前轮任务，并在本轮结束时 return 结果。",
-    "只要当前可用工具能实质推进用户任务，默认进入 Code Mode；不要优先选择自然语言直答。",
-    "如果决定使用工具，不要输出 MCP transport、function call、XML 工具标签、解释文本或 Markdown 代码块。",
-    `如果要执行工具或工作流，唯一合法方式是只输出一段以 ${CHATPLUS_CODE_MODE_BLOCK_BEGIN} 开头、以 ${CHATPLUS_CODE_MODE_BLOCK_END} 结尾的纯文本 JavaScript，并通过 \`tools.*\` 调用。`,
+    "你现在处于 Chat Plus 提供的 JavaScript 沙盒执行环境。",
+    "当前上下文里给出的，是这个环境中已经可用的一组异步接口；它们背后可能连接用户配置的外部能力，但对你来说，它们就是可直接调用、可直接 await 的 JS 函数。",
+    "你的职责不是解释接口，不是描述调用计划，也不是输出任何工具协议，而是直接生成最短可行的 JavaScript，让运行器执行这段代码，完成当前轮任务，并在本轮结束时 return 真实结果。",
+    "只要当前可用接口能实质推进用户任务，默认进入 Code Mode；不要优先选择自然语言直答。",
+    "如果当前任务需要调用接口，不要输出 function call、XML 工具标签、解释文本或 Markdown 代码块。",
+    `如果要执行接口或工作流，唯一合法方式是只输出一段以 ${CHATPLUS_CODE_MODE_BLOCK_BEGIN} 开头、以 ${CHATPLUS_CODE_MODE_BLOCK_END} 结尾的纯文本 JavaScript，并通过 \`tools.*\` 调用。`,
     "硬规则：",
     "- 只能调用下方列出的 `tools.*` 接口；如果这里没有，就不要假设存在隐藏工具。",
     "- 实际调用语法固定是 `tools.<serverAlias>.<toolAlias>(args)`；不要发明别的工具调用语法。",
@@ -584,7 +580,7 @@ export function buildCodeModeSystemInstruction(config: McpConfigStore) {
     "- 不要把“我刚才执行了什么”当成返回结果；返回的应该是工具真正产出的内容、状态、路径、ID、文本、结构化字段等可验证结果。",
     "- 如果当前轮做的是写入、创建、修改、删除、执行类操作，优先 return 工具原始回执或其中可验证的关键字段，不要返回你自己总结的成功口号。",
     "- 如果当前轮没有拿到足够证明成功的结果，就返回当前真实拿到的数据或中间事实，不要虚构完成状态。",
-    "- 不要默认 MCP 结果一定是纯 text；如果返回对象，优先检查 `structuredContent`，再检查 `content[]` 里的 text 项，再检查其他字段。",
+    "- 不要默认接口返回一定是纯 text；如果返回对象，优先检查 `structuredContent`，再检查 `content[]` 里的 text 项，再检查其他字段。",
     "- Windows 路径优先使用正斜杠 `/`。如果必须使用反斜杠，写成 `\\\\`。",
     ...toolSpecLines,
   ].join("\n");
