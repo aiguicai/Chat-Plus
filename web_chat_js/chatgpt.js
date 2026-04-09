@@ -1,5 +1,23 @@
 const toText = (value) => String(value ?? "").trim();
 
+function preferLongerText(current, candidate) {
+  const left = String(current ?? "");
+  const right = String(candidate ?? "");
+  if (!left) return right;
+  if (!right) return left;
+  if (right.length !== left.length) return right.length > left.length ? right : left;
+
+  const leftProtocolCount = (left.match(/\[CHAT_PLUS_/g) || []).length;
+  const rightProtocolCount = (right.match(/\[CHAT_PLUS_/g) || []).length;
+  if (rightProtocolCount !== leftProtocolCount) {
+    return rightProtocolCount > leftProtocolCount ? right : left;
+  }
+
+  const leftNewlineCount = (left.match(/\n/g) || []).length;
+  const rightNewlineCount = (right.match(/\n/g) || []).length;
+  return rightNewlineCount > leftNewlineCount ? right : left;
+}
+
 function looksLikeChatGptConversationUrl(url) {
   const text = toText(url).toLowerCase();
   return /(chatgpt\.com|chat\.openai\.com)\/backend-api\/(?:f\/)?conversation\b/.test(text);
@@ -103,10 +121,24 @@ function readAssistantMessageFromPayload(payload) {
   return candidates.find((message) => toText(message?.author?.role).toLowerCase() === "assistant") || null;
 }
 
-function buildAssistantTextFromEvents(events, streamHelpers) {
+function stripLeadingSpeakerLabel(text, labels) {
+  const source = String(text ?? "").replace(/\r\n?/g, "\n").trim();
+  if (!source) return "";
+
+  for (const label of labels) {
+    const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const next = source.replace(new RegExp(`^${escaped}\\s*\n*`, "i"), "").trim();
+    if (next !== source) return next;
+  }
+
+  return source;
+}
+
+function buildAssistantTextFromEvents(events, streamHelpers, protocolHelpers, protocol) {
   const parts = [];
   let matched = false;
   let fallbackText = "";
+  let protocolAwareText = "";
 
   events.forEach((entry) => {
     const payload = entry?.json;
@@ -118,6 +150,9 @@ function buildAssistantTextFromEvents(events, streamHelpers) {
     if (assistantSnapshotText) {
       parts[0] = assistantSnapshotText;
       fallbackText = mergeStreamingText(fallbackText, assistantSnapshotText);
+      if (protocolHelpers.containsProtocolBlock(assistantSnapshotText, protocol)) {
+        protocolAwareText = preferLongerText(protocolAwareText, assistantSnapshotText);
+      }
       matched = true;
       eventMatched = true;
     }
@@ -142,6 +177,9 @@ function buildAssistantTextFromEvents(events, streamHelpers) {
 
         if (patchText) {
           fallbackText = mergeStreamingText(fallbackText, patchText);
+          if (protocolHelpers.containsProtocolBlock(fallbackText, protocol)) {
+            protocolAwareText = preferLongerText(protocolAwareText, fallbackText);
+          }
         }
       });
     }
@@ -157,6 +195,9 @@ function buildAssistantTextFromEvents(events, streamHelpers) {
     const fallbackMessageText = readAssistantTextFromMessage(fallbackMessage);
     if (fallbackMessageText) {
       fallbackText = mergeStreamingText(fallbackText, fallbackMessageText);
+      if (protocolHelpers.containsProtocolBlock(fallbackMessageText, protocol)) {
+        protocolAwareText = preferLongerText(protocolAwareText, fallbackMessageText);
+      }
       matched = true;
     }
   });
@@ -164,7 +205,7 @@ function buildAssistantTextFromEvents(events, streamHelpers) {
   const structuredText = parts.filter((part) => typeof part === "string").join("");
   return {
     matched: matched || Boolean(structuredText || fallbackText),
-    text: structuredText || fallbackText,
+    text: protocolAwareText || structuredText || fallbackText,
   };
 }
 
@@ -221,35 +262,45 @@ return {
     const events = ctx.helpers.stream.readSseEvents(responseText);
     if (!events.length) return null;
 
-    const parsed = buildAssistantTextFromEvents(events, ctx.helpers.stream);
+    const parsed = buildAssistantTextFromEvents(
+      events,
+      ctx.helpers.stream,
+      ctx.helpers.protocol,
+      ctx.protocol,
+    );
     const responseContentPath = "sse:assistant.message.content.parts[*]";
-    const fullText = String(parsed.text || "");
+    const previewText = String(parsed.text || "");
     if (!parsed.matched) {
-      return buildSuppressedChatGptResult(ctx.helpers.protocol, ctx.protocol, fullText, responseContentPath);
+      return buildSuppressedChatGptResult(ctx.helpers.protocol, ctx.protocol, previewText, responseContentPath);
     }
-    if (!fullText) return null;
-    if (ctx.helpers.protocol.hasIncompleteProtocolBlock(fullText, ctx.protocol)) {
-      return buildSuppressedChatGptResult(ctx.helpers.protocol, ctx.protocol, fullText, responseContentPath);
+    if (!previewText) return null;
+    if (ctx.helpers.protocol.hasIncompleteProtocolBlock(previewText, ctx.protocol)) {
+      return buildSuppressedChatGptResult(ctx.helpers.protocol, ctx.protocol, previewText, responseContentPath);
     }
 
-    const blocks = ctx.helpers.protocol.readBlocks(fullText, ctx.protocol);
+    const blocks = ctx.helpers.protocol.readBlocks(previewText, ctx.protocol);
     const hasCodeModeBlock = ctx.helpers.protocol.hasCompleteWrappedBlock(
-      fullText,
+      previewText,
       ctx.protocol?.codeMode?.begin || "",
       ctx.protocol?.codeMode?.end || "",
     );
     const hasToolCallBlock = Boolean(blocks.toolCallRaw);
     const hasToolResultBlock = Boolean(blocks.toolResultRaw);
 
-    if (ctx.helpers.protocol.containsProtocolBlock(fullText, ctx.protocol) && !hasCodeModeBlock && !hasToolCallBlock && !hasToolResultBlock) {
-      return buildSuppressedChatGptResult(ctx.helpers.protocol, ctx.protocol, fullText, responseContentPath);
+    if (
+      ctx.helpers.protocol.containsProtocolBlock(previewText, ctx.protocol) &&
+      !hasCodeModeBlock &&
+      !hasToolCallBlock &&
+      !hasToolResultBlock
+    ) {
+      return buildSuppressedChatGptResult(ctx.helpers.protocol, ctx.protocol, previewText, responseContentPath);
     }
 
     return {
       matched: true,
       matchScore: hasCodeModeBlock ? 120 : hasToolCallBlock || hasToolResultBlock ? 110 : 100,
       responseContentPath,
-      responseContentPreview: fullText,
+      responseContentPreview: previewText,
       toolCall: blocks.toolCallRaw
         ? { detected: true, rawBlock: blocks.toolCallRaw }
         : { detected: false },
@@ -267,13 +318,34 @@ return {
       root: ctx.root || document,
       protocol: ctx.protocol,
       userSelectors: [
+        'section[data-turn="user"] .user-message-bubble-color',
+        'section[data-turn="user"] .user-message-bubble-color .whitespace-pre-wrap',
+        '[data-message-author-role="user"] .user-message-bubble-color',
+        '[data-message-author-role="user"] .user-message-bubble-color .whitespace-pre-wrap',
+        '[data-message-author-role="user"] .whitespace-pre-wrap',
         '[data-message-author-role="user"] [data-message-content="true"]',
-        '[data-message-author-role="user"]',
       ],
       assistantSelectors: [
+        'section[data-turn="assistant"] .markdown',
+        'section[data-turn="assistant"] .whitespace-pre-wrap',
+        '[data-message-author-role="assistant"] .markdown',
+        '[data-message-author-role="assistant"] .whitespace-pre-wrap',
         '[data-message-author-role="assistant"] [data-message-content="true"]',
         '[data-message-author-role="assistant"]',
       ],
+      normalizeUserText(text) {
+        return stripLeadingSpeakerLabel(text, ["你说：", "你说", "You said:", "You said"]);
+      },
+      normalizeAssistantText(text) {
+        return stripLeadingSpeakerLabel(text, [
+          "ChatGPT 说：",
+          "ChatGPT 说",
+          "ChatGPT said:",
+          "ChatGPT said",
+          "ChatGPT says:",
+          "ChatGPT says",
+        ]);
+      },
     });
   },
 
@@ -291,11 +363,21 @@ return {
         dispatchEvents: ["input", "change"],
       },
       send: {
-        mode: "click",
-        selectors: ['button[data-testid="send-button"]', "#composer-submit-button"],
-        waitForEnabled: true,
-        maxWaitMs: 2500,
+        mode: "enter",
+        targetSelectors: [
+          "#prompt-textarea.ProseMirror",
+          'div#prompt-textarea[contenteditable="true"]',
+          'textarea[aria-label="与 ChatGPT 聊天"]',
+          "textarea.wcDTda_fallbackTextarea",
+        ],
+        key: "Enter",
+        code: "Enter",
+        keyCode: 13,
+        which: 13,
+        charCode: 13,
+        shiftKey: false,
         beforeSendDelayMs: 240,
+        successWaitMs: 1600,
       },
     });
   },

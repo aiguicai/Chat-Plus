@@ -45,6 +45,53 @@ function readTextParts(value) {
   return direct;
 }
 
+function findMessageTextSlot(message, messageIndex) {
+  if (!message || typeof message !== "object") return null;
+
+  if (typeof message.content === "string") {
+    return {
+      text: message.content,
+      path: `body-json:messages[${messageIndex}].content`,
+      apply(nextText) {
+        message.content = nextText;
+      },
+    };
+  }
+
+  if (Array.isArray(message.content)) {
+    for (let index = message.content.length - 1; index >= 0; index -= 1) {
+      const item = message.content[index];
+      if (typeof item?.text !== "string") continue;
+
+      return {
+        text: item.text,
+        path: `body-json:messages[${messageIndex}].content[${index}].text`,
+        apply(nextText) {
+          message.content[index].text = nextText;
+        },
+      };
+    }
+  }
+
+  const segments = message?.payload?.segments;
+  if (Array.isArray(segments)) {
+    for (let index = segments.length - 1; index >= 0; index -= 1) {
+      const segment = segments[index];
+      if (typeof segment?.prompt !== "string") continue;
+
+      return {
+        text: segment.prompt,
+        path: `body-json:messages[${messageIndex}].payload.segments[${index}].prompt`,
+        apply(nextText) {
+          message.payload.segments[index].prompt = nextText;
+        },
+      };
+    }
+  }
+
+  return null;
+}
+
 return {
   meta: {
     contractVersion: 2,
@@ -69,19 +116,18 @@ return {
     const lastUserIdx = messages.map((item) => item?.role).lastIndexOf("user");
     if (lastUserIdx === -1) return null;
 
-    const original = messages[lastUserIdx]?.content;
-    if (typeof original !== "string") return null;
+    const slot = findMessageTextSlot(messages[lastUserIdx], lastUserIdx);
+    if (!slot?.text) return null;
 
-    const nextText = ctx.helpers.buildInjectedText(ctx.injectionText, original, ctx.injectionMode);
-    if (nextText === original) return null;
-
-    payload.messages[lastUserIdx].content = nextText;
+    const nextText = ctx.helpers.buildInjectedText(ctx.injectionText, slot.text, ctx.injectionMode);
+    if (nextText === slot.text) return null;
+    slot.apply(nextText);
 
     return {
       applied: true,
       bodyText: JSON.stringify(payload),
-      requestMessagePath: `body-json:messages[${lastUserIdx}].content`,
-      requestMessagePreview: original,
+      requestMessagePath: slot.path,
+      requestMessagePreview: slot.text,
     };
   },
 
