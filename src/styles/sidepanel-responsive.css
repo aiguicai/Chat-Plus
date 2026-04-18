@@ -30,6 +30,12 @@
     flex-wrap: wrap !important;
   }
 
+  .cp-backup-dialog {
+    width: min(428px, calc(100vw - 24px)) !important;
+    max-height: min(76vh, 560px) !important;
+    padding: 16px !important;
+  }
+
   .cp-library-pagination {
     justify-content: space-between !important;
   }
@@ -150,6 +156,14 @@
   .cp-editor-topbar .cp-toolbar-icon-sm {
     min-width: 26px !important;
     height: 26px !important;
+  }
+
+  .cp-header {
+    align-items: flex-start !important;
+  }
+
+  .cp-header-actions {
+    gap: 6px !important;
   }
 
   .cp-library-summary-top,

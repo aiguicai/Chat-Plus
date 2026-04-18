@@ -20,7 +20,6 @@ import {
 } from "../lib/format";
 import {
   getEffectiveOrchestrationTabEnabled,
-  shouldRefreshOrchestrationTabOnEnable,
 } from "../lib/orchestrationState";
 import {
   SITE_CONFIG_MAP_STORAGE_KEY,
@@ -28,9 +27,17 @@ import {
   compactExportConfigMap,
   compactSiteConfig,
   hasValidConfigData,
+  isSiteConfigEnabled,
   normalizeConfigMap,
   normalizeSiteConfig,
 } from "../lib/siteConfig";
+import {
+  buildFullBackupPayload,
+  DEFAULT_FULL_BACKUP_LOCAL_STATE,
+  DEFAULT_FULL_BACKUP_SYNC_STATE,
+  getFullBackupFileName,
+  parseFullBackupPayload,
+} from "../lib/fullBackup";
 import type {
   ConfigMap,
   OrchestrationColor,
@@ -44,19 +51,18 @@ type PageContext = Record<string, any>;
 export function createSidepanelControllerRuntime(ctx: any) {
   const {
     REFRESHING_TIP_MESSAGE,
-    ORCHESTRATION_DISABLED_STORAGE_KEY,
     ORCHESTRATION_GROUP_COLORS,
     currentTab,
     settings,
     siteConfigMap,
     currentHost,
     importInputRef,
+    backupImportInputRef,
     refreshTimerRef,
     refreshingTabIdRef,
     siteConfigMapRef,
     orchestrationTabColorsRef,
     orchestrationGroupIdsRef,
-    disabledOrchestrationTabIdsRef,
     activePaneRef,
     draftRef,
     editorHostRef,
@@ -75,20 +81,8 @@ export function createSidepanelControllerRuntime(ctx: any) {
     setTip,
     setPendingDeleteHost,
     setOrchestrationTabs,
-    setDisabledOrchestrationTabIds,
     showTip,
   } = ctx;
-
-  const normalizeDisabledOrchestrationTabIds = (value: unknown) =>
-    Array.from(
-      new Set(
-        Array.isArray(value)
-          ? value
-              .map((item) => Number(item))
-              .filter((item) => Number.isInteger(item) && item > 0)
-          : [],
-      ),
-    );
 
   const clearRefreshTip = (tabId?: number | null) => {
     if (refreshingTabIdRef.current === null) return;
@@ -203,13 +197,12 @@ export function createSidepanelControllerRuntime(ctx: any) {
       ),
     );
 
-    const disabledTabIdSet = new Set(disabledOrchestrationTabIdsRef.current);
     const matchedTabs = windowTabs
       .filter((tab) => completedHosts.has(formatUrlHost(tab.url || "")))
       .sort((left, right) => left.index - right.index);
     const tabColors = reconcileOrchestrationTabColors(
       matchedTabs
-        .filter((tab) => !disabledTabIdSet.has(tab.id || 0))
+        .filter((tab) => isSiteConfigEnabled(siteConfigMapRef.current[formatUrlHost(tab.url || "")]))
         .map((tab) => tab.id)
         .filter((tabId): tabId is number => tabId !== undefined),
     );
@@ -225,7 +218,9 @@ export function createSidepanelControllerRuntime(ctx: any) {
           favIconUrl: tab.favIconUrl || "",
           active: Boolean(tab.active),
           connected: false,
-          desiredEnabled: !disabledTabIdSet.has(tab.id || 0),
+          desiredEnabled: isSiteConfigEnabled(
+            siteConfigMapRef.current[formatUrlHost(tab.url || "")],
+          ),
           enabled: false,
           groupColor: tabColors[tab.id || 0] || ORCHESTRATION_GROUP_COLORS[0],
         }) satisfies OrchestrationTab,
@@ -527,24 +522,6 @@ export function createSidepanelControllerRuntime(ctx: any) {
     }
   }
 
-  async function loadOrchestrationState() {
-    const stored = await getStorage<any>("session", [ORCHESTRATION_DISABLED_STORAGE_KEY]);
-    const nextIds = normalizeDisabledOrchestrationTabIds(
-      stored[ORCHESTRATION_DISABLED_STORAGE_KEY],
-    );
-    disabledOrchestrationTabIdsRef.current = nextIds;
-    setDisabledOrchestrationTabIds(nextIds);
-  }
-
-  const persistDisabledOrchestrationTabIds = (nextIds: number[]) => {
-    const normalized = normalizeDisabledOrchestrationTabIds(nextIds);
-    disabledOrchestrationTabIdsRef.current = normalized;
-    setDisabledOrchestrationTabIds(normalized);
-    return setStorage("session", {
-      [ORCHESTRATION_DISABLED_STORAGE_KEY]: normalized,
-    });
-  };
-
   async function requestPageContext(tabId: number, tabHost = "") {
     const fallbackFrames = [{ frameId: 0, parentFrameId: -1, url: "" }];
     const frames = (await getTabFrames(tabId).catch(() => fallbackFrames)) || fallbackFrames;
@@ -699,6 +676,7 @@ export function createSidepanelControllerRuntime(ctx: any) {
       version: "3.0",
       exportedAt: new Date().toISOString(),
       site: normalizedHost,
+      enabled: normalizedConfig.enabled !== false,
       scriptBase64: encodeBase64Utf8(scriptText),
     };
   }
@@ -718,17 +696,18 @@ export function createSidepanelControllerRuntime(ctx: any) {
   }
 
   function parseImportedSiteEntries(payload: Record<string, unknown>) {
-    const entries: Array<{ site: string; scriptBase64: string }> = [];
+    const entries: Array<{ site: string; enabled: boolean; scriptBase64: string }> = [];
 
     const pushEntry = (candidate: Record<string, unknown>) => {
       const site = normalizeImportedSiteKey(candidate?.site || candidate?.host);
+      const enabled = candidate?.enabled !== false;
       const scriptBase64 = String(
         candidate?.scriptBase64 || candidate?.adapterScriptBase64 || "",
       ).trim();
       if (!site || !scriptBase64) {
         throw new Error("格式错误");
       }
-      entries.push({ site, scriptBase64 });
+      entries.push({ site, enabled, scriptBase64 });
     };
 
     if (Array.isArray(payload?.sites)) {
@@ -823,13 +802,13 @@ export function createSidepanelControllerRuntime(ctx: any) {
 
         const { validateSiteAdapterScript } = await import("../lib/siteAdapter");
         const merged = { ...siteConfigMapRef.current };
-        importedEntries.forEach(({ site, scriptBase64 }) => {
+        importedEntries.forEach(({ site, enabled, scriptBase64 }) => {
           const adapterScript = decodeBase64Utf8(scriptBase64);
           const validation = validateSiteAdapterScript(adapterScript);
           if (!validation.ok) {
             throw new Error(`${site}：${validation.error || "脚本校验失败"}`);
           }
-          merged[site] = compactSiteConfig({ adapterScript });
+          merged[site] = compactSiteConfig({ enabled, adapterScript });
         });
 
         await persistSiteConfigMap(merged);
@@ -855,31 +834,54 @@ export function createSidepanelControllerRuntime(ctx: any) {
   };
 
   const toggleOrchestrationTab = (tab: OrchestrationTab, enabled: boolean) => {
-    const nextIds = enabled
-      ? disabledOrchestrationTabIdsRef.current.filter((id) => id !== tab.tabId)
-      : [...disabledOrchestrationTabIdsRef.current, tab.tabId];
     void (async () => {
-      await persistDisabledOrchestrationTabIds(nextIds);
-      if (shouldRefreshOrchestrationTabOnEnable(tab, enabled)) {
+      const host = String(tab.host || "").trim().toLowerCase();
+      const currentConfig = normalizeSiteConfig(siteConfigMapRef.current[host] || {});
+      if (!host || !hasValidConfigData(currentConfig)) return;
+
+      await persistHostConfig(host, {
+        ...currentConfig,
+        enabled,
+      });
+
+      const affectedTabs = (await queryTabs({})).filter(
+        (windowTab) => formatUrlHost(windowTab.url || "") === host && Number(windowTab.id) > 0,
+      );
+
+      if (enabled && affectedTabs.length) {
+        showTip(`正在恢复 ${host} 的页面连接...`, "");
+      }
+
+      for (const affectedTab of affectedTabs) {
+        const affectedTabId = Number(affectedTab.id || 0);
+        if (!affectedTabId) continue;
+
+        let refreshed = false;
         try {
-          if (currentTab.id === tab.tabId) {
-            await prepareCurrentTabReload(tab.tabId);
-          } else {
-            showTip(`正在刷新 ${tab.host} 页面...`, "");
-          }
-          await reloadTab(tab.tabId);
-          await waitForOrchestrationTabConnection(tab);
-          await refreshOrchestrationTabRuntimeConfig(tab.tabId);
+          refreshed = await refreshOrchestrationTabRuntimeConfig(affectedTabId);
         } catch (error) {
           showTip(getErrorMessage(error), "cp-tip-err");
+          continue;
         }
-      } else {
+
+        if (!enabled || refreshed) continue;
+
         try {
-          await refreshOrchestrationTabRuntimeConfig(tab.tabId);
+          if (currentTab.id === affectedTabId) {
+            await prepareCurrentTabReload(affectedTabId);
+          }
+          await reloadTab(affectedTabId);
+          await waitForOrchestrationTabConnection({
+            ...tab,
+            tabId: affectedTabId,
+            url: affectedTab.url || tab.url,
+          });
+          await refreshOrchestrationTabRuntimeConfig(affectedTabId);
         } catch (error) {
           showTip(getErrorMessage(error), "cp-tip-err");
         }
       }
+
       await refreshOrchestrationTabs({ syncGroups: true });
     })();
   };
@@ -893,8 +895,63 @@ export function createSidepanelControllerRuntime(ctx: any) {
     }
   };
 
+  const exportFullBackup = async () => {
+    const [localState, syncState] = await Promise.all([
+      getStorage<Record<string, unknown>>("local", Object.keys(DEFAULT_FULL_BACKUP_LOCAL_STATE)),
+      getStorage<Record<string, unknown>>("sync", Object.keys(DEFAULT_FULL_BACKUP_SYNC_STATE)),
+    ]);
+    const payload = buildFullBackupPayload(localState, syncState);
+
+    downloadPayload(
+      getFullBackupFileName(),
+      payload,
+      `已导出完整配置包，含 ${payload.data.summary.siteCount} 个站点`,
+    );
+  };
+
+  function importFullBackup(file?: File | null) {
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const parsed = JSON.parse(String(event.target?.result || ""));
+        const restored = parseFullBackupPayload(parsed);
+
+        await Promise.all([
+          setStorage("local", {
+            ...DEFAULT_FULL_BACKUP_LOCAL_STATE,
+            ...restored.local,
+          }),
+          setStorage("sync", {
+            ...DEFAULT_FULL_BACKUP_SYNC_STATE,
+            ...restored.sync,
+          }),
+        ]);
+
+        await Promise.all([
+          refreshActiveTabContext(),
+          activePaneRef.current === "orchestration"
+            ? refreshOrchestrationTabs({ syncGroups: true })
+            : Promise.resolve(),
+        ]);
+
+        showTip(
+          `已恢复完整配置，含 ${restored.summary.siteCount} 个站点 / ${restored.summary.serverCount} 个 MCP 服务`,
+          "cp-tip-ok",
+        );
+      } catch (error) {
+        showTip(`导入失败：${getErrorMessage(error)}`, "cp-tip-err");
+      } finally {
+        if (backupImportInputRef?.current) {
+          backupImportInputRef.current.value = "";
+        }
+      }
+    };
+    reader.readAsText(file);
+  }
+
   return {
-    normalizeDisabledOrchestrationTabIds,
     clearRefreshTip,
     scorePageContext,
     storeFrameContext,
@@ -916,8 +973,6 @@ export function createSidepanelControllerRuntime(ctx: any) {
     refreshCurrentPage,
     loadSettings,
     loadSiteConfigMap,
-    loadOrchestrationState,
-    persistDisabledOrchestrationTabIds,
     requestPageContext,
     applyContext,
     getActiveTabSnapshot,
@@ -926,8 +981,10 @@ export function createSidepanelControllerRuntime(ctx: any) {
     updateAdapterScript,
     exportAll,
     exportHost,
+    exportFullBackup,
     deleteHost,
     importConfig,
+    importFullBackup,
     toggleTheme,
     toggleOrchestrationTab,
     jumpToOrchestrationTab,

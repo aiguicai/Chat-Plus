@@ -37,9 +37,14 @@ import {
   toStoredServerConfig,
 } from "../mcp/shared";
 import { getExtensionVersion } from "../shared/extensionMeta";
+import {
+  SITE_CONFIG_MAP_STORAGE_KEY,
+  isSiteConfigEnabled,
+  normalizeSiteConfig,
+  readStoredSiteConfigMap,
+} from "../sidepanel/lib/siteConfig";
 
 const CONNECTION_IDLE_TTL_MS = 5 * 60 * 1000;
-const ORCHESTRATION_DISABLED_STORAGE_KEY = "orchestrationDisabledTabIds";
 
 type StoredMcpState = {
   config: McpConfigStore;
@@ -48,7 +53,7 @@ type StoredMcpState = {
   enabledToolsByServer: McpEnabledToolsMap;
   enabledToolsBySiteKey: McpSiteEnabledToolsMap;
   enabledToolsByTabId: McpTabEnabledToolsMap;
-  disabledOrchestrationTabIds: number[];
+  siteConfigMap: Record<string, unknown>;
 };
 
 type PooledConnection = {
@@ -101,25 +106,15 @@ function serializeError(error: unknown) {
   return String((error as any)?.message || error || "Unknown error");
 }
 
-function normalizeDisabledOrchestrationTabIds(value: unknown) {
-  return Array.from(
-    new Set(
-      Array.isArray(value)
-        ? value
-            .map((item) => Number(item))
-            .filter((item) => Number.isInteger(item) && item > 0)
-        : [],
-    ),
-  );
-}
-
-function isOrchestrationTabEnabled(
-  disabledOrchestrationTabIds: number[] = [],
-  tabId?: string | number | null,
+function isSiteScopeEnabled(
+  siteConfigMap: Record<string, unknown>,
+  siteKey?: string | null,
 ) {
-  const normalizedTabId = normalizeTabId(tabId);
-  if (!normalizedTabId) return true;
-  return !new Set(disabledOrchestrationTabIds).has(Number(normalizedTabId));
+  const normalizedSiteKey = normalizeSiteToolScopeKey(siteKey);
+  if (!normalizedSiteKey) return true;
+  const siteConfig = normalizeSiteConfig((siteConfigMap[normalizedSiteKey] as any) || {});
+  if (!String(siteConfig.adapterScript || "").trim()) return true;
+  return isSiteConfigEnabled(siteConfig);
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -260,6 +255,7 @@ async function getPooledClient(server: McpServerConfig) {
 export async function getStoredMcpState(): Promise<StoredMcpState> {
   const [stored, storedSession] = await Promise.all([
     getLocalStorage({
+      [SITE_CONFIG_MAP_STORAGE_KEY]: {},
       [MCP_CONFIG_STORAGE_KEY]: DEFAULT_MCP_CONFIG_STORE,
       [MCP_DISCOVERED_TOOLS_STORAGE_KEY]: {},
       [MCP_DISCOVERY_META_STORAGE_KEY]: {},
@@ -268,7 +264,6 @@ export async function getStoredMcpState(): Promise<StoredMcpState> {
     }),
     getSessionStorage({
       [MCP_TAB_ENABLED_TOOLS_STORAGE_KEY]: { enabledToolsByTabId: {} },
-      [ORCHESTRATION_DISABLED_STORAGE_KEY]: [],
     }),
   ]);
 
@@ -291,9 +286,7 @@ export async function getStoredMcpState(): Promise<StoredMcpState> {
     mergedConfig,
     (stored[MCP_SITE_ENABLED_TOOLS_STORAGE_KEY] as any)?.enabledToolsBySiteKey,
   );
-  const disabledOrchestrationTabIds = normalizeDisabledOrchestrationTabIds(
-    storedSession[ORCHESTRATION_DISABLED_STORAGE_KEY],
-  );
+  const siteConfigMap = readStoredSiteConfigMap(stored as Record<string, unknown>);
 
   const filteredDiscovered: Record<string, McpToolDescriptor[]> = {};
   Object.entries(discoveredToolsByServer).forEach(([serverId, tools]) => {
@@ -316,7 +309,7 @@ export async function getStoredMcpState(): Promise<StoredMcpState> {
     enabledToolsByServer,
     enabledToolsBySiteKey,
     enabledToolsByTabId,
-    disabledOrchestrationTabIds,
+    siteConfigMap,
   };
 }
 
@@ -436,12 +429,15 @@ async function resolveSiteToolScopeKeyFromTabId(tabId: string) {
 
 export async function resolveEffectiveEnabledToolsByServer(state: StoredMcpState, message: any) {
   const tabId = normalizeTabId(message?.tabId);
-  if (!tabId) {
-    return state.enabledToolsByServer;
+  const messageSiteKey = normalizeSiteToolScopeKey(message?.siteKey || message?.host);
+  const siteKey =
+    messageSiteKey || (tabId ? await resolveSiteToolScopeKeyFromTabId(tabId) : "");
+  if (!isSiteScopeEnabled(state.siteConfigMap, siteKey)) {
+    return {};
   }
 
-  if (!isOrchestrationTabEnabled(state.disabledOrchestrationTabIds, tabId)) {
-    return {};
+  if (!tabId) {
+    return state.enabledToolsByServer;
   }
 
   const tabEnabledTools = state.enabledToolsByTabId[tabId];
@@ -449,8 +445,6 @@ export async function resolveEffectiveEnabledToolsByServer(state: StoredMcpState
     return tabEnabledTools;
   }
 
-  const messageSiteKey = normalizeSiteToolScopeKey(message?.siteKey || message?.host);
-  const siteKey = messageSiteKey || (await resolveSiteToolScopeKeyFromTabId(tabId));
   if (siteKey && state.enabledToolsBySiteKey[siteKey]) {
     return state.enabledToolsBySiteKey[siteKey];
   }
@@ -689,6 +683,8 @@ async function handleToolCall(message: any) {
   const state = await getStoredMcpState();
   const server = findServer(state.config, serverId);
   const enabledToolsByServer = await resolveEffectiveEnabledToolsByServer(state, message);
+  const siteKey = normalizeSiteToolScopeKey(message?.siteKey || message?.host)
+    || (tabId ? await resolveSiteToolScopeKeyFromTabId(tabId) : "");
   if (!server) {
     return {
       ok: false,
@@ -696,10 +692,10 @@ async function handleToolCall(message: any) {
     };
   }
 
-  if (tabId && !isOrchestrationTabEnabled(state.disabledOrchestrationTabIds, tabId)) {
+  if (!isSiteScopeEnabled(state.siteConfigMap, siteKey)) {
     return {
       ok: false,
-      error: "当前标签页已关闭 Chat Plus",
+      error: "当前站点已关闭 Chat Plus",
     };
   }
 

@@ -1348,6 +1348,10 @@ export function createContinuationController({
             Date.now() - Number(state.bubbleDecorationFallback.updatedAt || 0) < 45000
               ? state.bubbleDecorationFallback.requestMessagePreview
               : "",
+          responseContentPreview:
+            Date.now() - Number(state.bubbleDecorationFallback.responseUpdatedAt || 0) < 45000
+              ? state.bubbleDecorationFallback.responseContentPreview
+              : "",
         },
         {
           snapshotHtml: snapshot.html,

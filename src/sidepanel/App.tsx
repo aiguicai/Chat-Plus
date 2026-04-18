@@ -1,7 +1,13 @@
-import { Suspense, lazy, useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
 
 import { TabButton } from "./components/common";
-import { MoonIcon, SunIcon } from "./components/icons";
+import {
+  BackupTransferIcon,
+  ExportAllIcon,
+  ImportIcon,
+  MoonIcon,
+  SunIcon,
+} from "./components/icons";
 import { useSidepanelController } from "./hooks/useSidepanelController";
 import { OrchestrationPane } from "./panes/OrchestrationPane";
 import { getExtensionVersion } from "../shared/extensionMeta";
@@ -41,6 +47,8 @@ export default function App() {
     ? controller.orchestrationTabs
     : [];
   const safeHosts = Array.isArray(controller.hosts) ? controller.hosts : [];
+  const [backupMenuOpen, setBackupMenuOpen] = useState(false);
+  const backupMenuRef = useRef<HTMLDivElement | null>(null);
   const [loadedPanes, setLoadedPanes] = useState({
     site: controller.activePane === "site",
     tools: controller.activePane === "tools",
@@ -54,6 +62,28 @@ export default function App() {
       about: prev.about || controller.activePane === "about",
     }));
   }, [controller.activePane]);
+
+  useEffect(() => {
+    if (!backupMenuOpen) return undefined;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (backupMenuRef.current?.contains(event.target as Node)) return;
+      setBackupMenuOpen(false);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setBackupMenuOpen(false);
+      }
+    };
+
+    window.addEventListener("mousedown", handlePointerDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("mousedown", handlePointerDown);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [backupMenuOpen]);
 
   return (
     <div
@@ -78,6 +108,50 @@ export default function App() {
             </div>
           </div>
           <div className="cp-header-actions">
+            <div
+              ref={backupMenuRef}
+              className={`cp-header-action-menu${backupMenuOpen ? " is-open" : ""}`}
+            >
+              <button
+                className="cp-icon-btn"
+                type="button"
+                aria-label="展开完整备份与恢复操作"
+                title="完整备份与恢复"
+                aria-haspopup="menu"
+                aria-expanded={backupMenuOpen}
+                onClick={() => setBackupMenuOpen((open) => !open)}
+              >
+                <BackupTransferIcon />
+              </button>
+              {backupMenuOpen ? (
+                <div className="cp-header-action-popover" role="menu" aria-label="完整备份操作">
+                  <button
+                    className="cp-header-action-item"
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setBackupMenuOpen(false);
+                      void controller.exportFullBackup();
+                    }}
+                  >
+                    <ExportAllIcon />
+                    <span>备份</span>
+                  </button>
+                  <button
+                    className="cp-header-action-item"
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setBackupMenuOpen(false);
+                      controller.backupImportInputRef.current?.click();
+                    }}
+                  >
+                    <ImportIcon />
+                    <span>导入</span>
+                  </button>
+                </div>
+              ) : null}
+            </div>
             <button
               className="cp-icon-btn"
               type="button"
@@ -194,6 +268,13 @@ export default function App() {
             {controller.settings.enabled ? "已启用" : "已暂停"}
           </span>
         </div>
+        <input
+          ref={controller.backupImportInputRef}
+          type="file"
+          accept=".json"
+          hidden
+          onChange={(event) => controller.importFullBackup(event.target.files?.[0])}
+        />
       </div>
     </div>
   );

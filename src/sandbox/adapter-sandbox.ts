@@ -350,6 +350,146 @@ import {
     return normalized.trim();
   }
 
+  function isLikelyValidStringEscapeStart(
+    nextChar: string,
+    source: string,
+    index: number,
+  ) {
+    if (!nextChar) return false;
+    if (/['"`\\bfnrtv0]/.test(nextChar)) return true;
+    if (/[1-9]/.test(nextChar)) return true;
+    if (nextChar === "\n" || nextChar === "\r") return true;
+    if (nextChar === "x") {
+      return /^[0-9a-fA-F]{2}$/.test(source.slice(index + 1, index + 3));
+    }
+    if (nextChar === "u") {
+      if (source[index + 1] === "{") {
+        return /^[0-9a-fA-F]+\}/.test(source.slice(index + 2));
+      }
+      return /^[0-9a-fA-F]{4}$/.test(source.slice(index + 1, index + 5));
+    }
+    return false;
+  }
+
+  function findNextSignificantChar(source: string, startIndex: number) {
+    for (let index = Math.max(0, startIndex); index < source.length; index += 1) {
+      const char = source[index];
+      if (!/\s/.test(char)) {
+        return char;
+      }
+    }
+    return "";
+  }
+
+  function isLikelyClosingQuote(source: string, quoteIndex: number) {
+    const nextChar = findNextSignificantChar(source, quoteIndex + 1);
+    if (!nextChar) return true;
+    return /[),.;\]}:+!?<>=]/.test(nextChar);
+  }
+
+  function repairLikelyBrokenQuotedStrings(code: string) {
+    const source = String(code || "");
+    if (!source) {
+      return {
+        code: source,
+        changed: false,
+        repairedBackslashes: false,
+        repairedQuotes: false,
+      };
+    }
+
+    let result = "";
+    let changed = false;
+    let repairedBackslashes = false;
+    let repairedQuotes = false;
+    let quote = "";
+    let escaped = false;
+    let inLineComment = false;
+    let inBlockComment = false;
+
+    for (let index = 0; index < source.length; index += 1) {
+      const char = source[index];
+      const nextChar = source[index + 1] || "";
+
+      if (inLineComment) {
+        result += char;
+        if (char === "\n") inLineComment = false;
+        continue;
+      }
+
+      if (inBlockComment) {
+        result += char;
+        if (char === "*" && nextChar === "/") {
+          result += "/";
+          index += 1;
+          inBlockComment = false;
+        }
+        continue;
+      }
+
+      if (!quote) {
+        if (char === "/" && nextChar === "/") {
+          result += "//";
+          index += 1;
+          inLineComment = true;
+          continue;
+        }
+        if (char === "/" && nextChar === "*") {
+          result += "/*";
+          index += 1;
+          inBlockComment = true;
+          continue;
+        }
+        if (char === "'" || char === '"' || char === "`") {
+          quote = char;
+          escaped = false;
+        }
+        result += char;
+        continue;
+      }
+
+      if (escaped) {
+        result += char;
+        escaped = false;
+        continue;
+      }
+
+      if (char === "\\") {
+        if (isLikelyValidStringEscapeStart(nextChar, source, index + 1)) {
+          result += char;
+          escaped = true;
+          continue;
+        }
+        result += "\\\\";
+        changed = true;
+        repairedBackslashes = true;
+        continue;
+      }
+
+      if (char === quote) {
+        if (quote !== "`" && !isLikelyClosingQuote(source, index)) {
+          result += `\\${quote}`;
+          changed = true;
+          repairedQuotes = true;
+          continue;
+        }
+        result += char;
+        quote = "";
+        escaped = false;
+        continue;
+      }
+
+      result += char;
+    }
+
+    return {
+      code: result,
+      changed,
+      repairedBackslashes,
+      repairedQuotes,
+    };
+  }
+
   function createDebugCodePreview(code: string, maxChars = CODE_MODE_DEBUG_PREVIEW_LIMIT) {
     const normalized = String(code || "");
     if (!normalized) return "";
@@ -778,6 +918,9 @@ ${normalized}`,
 
     const restrictedConsole = createRestrictedConsole();
     const debugCodePreview = createDebugCodePreview(normalizedCode);
+    let effectiveCode = normalizedCode;
+    const compileDiagnosticNotes: string[] = [];
+    let compileErrorMessage = "";
     let runner:
       | ((
           tools: unknown,
@@ -801,20 +944,54 @@ ${normalized}`,
       runner = new Function(
         "tools", "toolDocs", "console", "JSON", "Object", "Array", "Math", "Promise",
         "String", "Number", "Boolean", "Date", "RegExp", "URL",
-        `"use strict";\nreturn (async () => {\n${normalizedCode}\n})();`,
+        `"use strict";\nreturn (async () => {\n${effectiveCode}\n})();`,
       ) as typeof runner;
     } catch (error) {
+      compileErrorMessage = String((error as any)?.message || error || "代码编译失败");
+      const repaired = repairLikelyBrokenQuotedStrings(normalizedCode);
+      if (repaired.changed && repaired.code !== normalizedCode) {
+        try {
+          effectiveCode = repaired.code;
+          runner = new Function(
+            "tools", "toolDocs", "console", "JSON", "Object", "Array", "Math", "Promise",
+            "String", "Number", "Boolean", "Date", "RegExp", "URL",
+            `"use strict";\nreturn (async () => {\n${effectiveCode}\n})();`,
+          ) as typeof runner;
+          if (repaired.repairedBackslashes) {
+            compileDiagnosticNotes.push(
+              "已自动修正常见的字符串反斜杠转义问题，例如 Windows 路径里的 `\\`。",
+            );
+          }
+          if (repaired.repairedQuotes) {
+            compileDiagnosticNotes.push(
+              "已自动修正字符串里的未转义引号，例如命令参数中的 `\"...\"`。",
+            );
+          }
+        } catch (repairError) {
+          effectiveCode = normalizedCode;
+          compileErrorMessage = [
+            compileErrorMessage,
+            String((repairError as any)?.message || repairError || ""),
+          ]
+            .filter(Boolean)
+            .join("；修复后仍失败：");
+        }
+      }
+    }
+
+    if (!runner) {
       return {
         ok: false,
         stage: "compile",
-        error: String((error as any)?.message || error || "代码编译失败"),
+        error: compileErrorMessage || "代码编译失败",
         debugCodePreview,
         resultText: formatCodeModeFeedback({
           ok: false,
           stage: "compile",
-          error: String((error as any)?.message || error || "代码编译失败"),
+          error: compileErrorMessage || "代码编译失败",
           consoleEntries: restrictedConsole.entries,
           debugCodePreview,
+          diagnosticNotes: compileDiagnosticNotes,
         }),
       };
     }
@@ -846,7 +1023,7 @@ ${normalized}`,
       }
 
       const diagnosticNotes = buildCodeModeDiagnosticNotes({
-        code: normalizedCode,
+        code: effectiveCode,
         result,
       });
 

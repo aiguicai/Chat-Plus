@@ -4,6 +4,7 @@ export type Tone = "neutral" | "success" | "warning" | "danger" | "active";
 export type TipTone = "" | "cp-tip-ok" | "cp-tip-warn" | "cp-tip-err";
 
 export type SiteConfig = {
+  enabled?: boolean;
   adapterScript?: string;
 };
 

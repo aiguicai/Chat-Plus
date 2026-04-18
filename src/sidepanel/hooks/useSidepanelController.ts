@@ -36,7 +36,6 @@ type PageContext = {
 };
 
 const REFRESHING_TIP_MESSAGE = "正在刷新当前页面...";
-const ORCHESTRATION_DISABLED_STORAGE_KEY = "orchestrationDisabledTabIds";
 const ORCHESTRATION_GROUP_COLORS: OrchestrationColor[] = [
   "blue",
   "orange",
@@ -60,16 +59,15 @@ export function useSidepanelController() {
   const [tip, setTip] = useState<TipState>(DEFAULT_TIP);
   const [pendingDeleteHost, setPendingDeleteHost] = useState("");
   const [orchestrationTabs, setOrchestrationTabs] = useState<OrchestrationTab[]>([]);
-  const [disabledOrchestrationTabIds, setDisabledOrchestrationTabIds] = useState<number[]>([]);
   const [orchestrationStateReady, setOrchestrationStateReady] = useState(false);
 
   const importInputRef = useRef<HTMLInputElement | null>(null);
+  const backupImportInputRef = useRef<HTMLInputElement | null>(null);
   const refreshTimerRef = useRef<number | null>(null);
   const refreshingTabIdRef = useRef<number | null>(null);
   const siteConfigMapRef = useRef<ConfigMap>({});
   const orchestrationTabColorsRef = useRef<Record<number, OrchestrationColor>>({});
   const orchestrationGroupIdsRef = useRef<Record<string, number>>({});
-  const disabledOrchestrationTabIdsRef = useRef<number[]>([]);
   const activePaneRef = useRef<Pane>("orchestration");
   const draftRef = useRef<SiteConfig>({});
   const editorHostRef = useRef("");
@@ -92,7 +90,6 @@ export function useSidepanelController() {
 
   const ctx = {
     REFRESHING_TIP_MESSAGE,
-    ORCHESTRATION_DISABLED_STORAGE_KEY,
     ORCHESTRATION_GROUP_COLORS,
     activePane,
     screen,
@@ -105,15 +102,14 @@ export function useSidepanelController() {
     tip,
     pendingDeleteHost,
     orchestrationTabs,
-    disabledOrchestrationTabIds,
     orchestrationStateReady,
     importInputRef,
+    backupImportInputRef,
     refreshTimerRef,
     refreshingTabIdRef,
     siteConfigMapRef,
     orchestrationTabColorsRef,
     orchestrationGroupIdsRef,
-    disabledOrchestrationTabIdsRef,
     activePaneRef,
     draftRef,
     editorHostRef,
@@ -138,7 +134,6 @@ export function useSidepanelController() {
     setTip,
     setPendingDeleteHost,
     setOrchestrationTabs,
-    setDisabledOrchestrationTabIds,
     setOrchestrationStateReady,
   };
 
@@ -168,6 +163,7 @@ export function useSidepanelController() {
     settingsTip,
     hasSavedSites,
     importInputRef,
+    backupImportInputRef,
     setActivePane,
     setPendingDeleteHost,
     toggleTheme: runtime.toggleTheme,
@@ -180,7 +176,9 @@ export function useSidepanelController() {
     updateAdapterScript: runtime.updateAdapterScript,
     exportAll: runtime.exportAll,
     exportHost: runtime.exportHost,
+    exportFullBackup: runtime.exportFullBackup,
     deleteHost: runtime.deleteHost,
     importConfig: runtime.importConfig,
+    importFullBackup: runtime.importFullBackup,
   };
 }

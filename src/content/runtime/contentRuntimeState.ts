@@ -16,7 +16,6 @@ export const CODE_MODE_MANUAL_RUN_SOURCE_ATTR = "data-chat-plus-code-mode-source
 export const SYSTEM_INJECTION_WIDGET_ID = "chat-plus-system-injection-widget";
 export const SYSTEM_INJECTION_WIDGET_POSITION_STORAGE_KEY =
   "chat-plus-system-injection-widget-position";
-export const ORCHESTRATION_DISABLED_STORAGE_KEY = "orchestrationDisabledTabIds";
 
 export function createContentRuntimeState() {
   return {
@@ -48,7 +47,9 @@ export function createContentRuntimeState() {
     },
     bubbleDecorationFallback: {
       requestMessagePreview: "",
+      responseContentPreview: "",
       updatedAt: 0,
+      responseUpdatedAt: 0,
     },
     pageContext: {
       lastUrl: location.href,

@@ -27,7 +27,6 @@ import {
   CODE_MODE_RECENT_EXECUTION_TTL_MS,
   MONITOR_CONTROL_EVENT,
   MONITOR_RESULT_EVENT,
-  ORCHESTRATION_DISABLED_STORAGE_KEY,
   createContentRuntimeState,
 } from "./runtime/contentRuntimeState";
 import { createCodeModeStatusController } from "./runtime/codeModeStatus";
@@ -291,7 +290,9 @@ import {
     state.manualDomInjection.injectionMode = "system";
     state.manualDomInjection.preparedAt = 0;
     state.bubbleDecorationFallback.requestMessagePreview = "";
+    state.bubbleDecorationFallback.responseContentPreview = "";
     state.bubbleDecorationFallback.updatedAt = 0;
+    state.bubbleDecorationFallback.responseUpdatedAt = 0;
     if (state.systemInjectionWidget.compressCooldownTimerId) {
       window.clearTimeout(state.systemInjectionWidget.compressCooldownTimerId);
       state.systemInjectionWidget.compressCooldownTimerId = 0;
@@ -521,6 +522,13 @@ import {
     state.bubbleDecorationFallback.updatedAt = Date.now();
   }
 
+  function rememberBubbleDecorationResponsePreview(value: unknown) {
+    const normalized = String(value ?? "").replace(/\r\n?/g, "\n").trim();
+    if (!normalized) return;
+    state.bubbleDecorationFallback.responseContentPreview = normalized;
+    state.bubbleDecorationFallback.responseUpdatedAt = Date.now();
+  }
+
   function buildCodeModeFeedbackText(response: Record<string, unknown> | null | undefined) {
     const feedback =
       String(response?.resultText || "").trim() ||
@@ -680,7 +688,9 @@ import {
     if (!(card instanceof Element)) return "";
     const source = card.querySelector(`[${CODE_MODE_MANUAL_RUN_SOURCE_ATTR}="1"]`);
     if (!(source instanceof HTMLElement)) return "";
-    return String(source.textContent || "").trim();
+    return String(
+      source.getAttribute("data-chat-plus-code-mode-raw") || source.textContent || "",
+    ).trim();
   }
   function isCodeModeRunCancelled(runId: number) {
     return codeModeStatusController.isCodeModeRunCancelled(runId);
@@ -914,6 +924,9 @@ import {
     if (detail.type === "result") {
       if (!isPluginRuntimeEnabled()) return;
       rememberBubbleDecorationRequestPreview(detail?.requestMessagePreview);
+      if (detail.matched === true && detail.responseFinal === true) {
+        rememberBubbleDecorationResponsePreview(detail?.responseContentPreview);
+      }
       const allowAssistantCodeModeAutoExecution = shouldAutoExecuteAssistantCodeMode(state, detail);
       maybeConfirmPendingSystemInjectionFromResult(detail);
       maybeConfirmPendingManualDomInjectionFromResult(detail);
@@ -1123,8 +1136,7 @@ import {
           changes[MCP_SITE_ENABLED_TOOLS_STORAGE_KEY])) ||
       (namespace === "session" &&
         (changes[SYSTEM_INSTRUCTION_TAB_SELECTION_STORAGE_KEY] ||
-          changes[MCP_TAB_ENABLED_TOOLS_STORAGE_KEY] ||
-          changes[ORCHESTRATION_DISABLED_STORAGE_KEY]))
+          changes[MCP_TAB_ENABLED_TOOLS_STORAGE_KEY]))
     ) {
       void resolveMonitorConfigFromRuntime();
     }

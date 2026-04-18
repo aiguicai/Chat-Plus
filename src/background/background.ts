@@ -6,6 +6,7 @@ import {
 import {
   SITE_CONFIG_MAP_STORAGE_KEY,
   readStoredSiteConfigMap,
+  isSiteConfigEnabled,
   normalizeSiteConfig,
 } from "../sidepanel/lib/siteConfig";
 import {
@@ -30,7 +31,6 @@ const DEFAULT_SYNC_SETTINGS = {
   theme: 'dark',
   enabled: true
 };
-const ORCHESTRATION_DISABLED_STORAGE_KEY = 'orchestrationDisabledTabIds';
 const CHROME_SIDE_PANEL_KEY = 'side' + 'Panel';
 const OPEN_METHOD_KEY = 'open';
 const SET_PANEL_BEHAVIOR_METHOD_KEY = 'setPanelBehavior';
@@ -161,24 +161,6 @@ function joinInstructionSections(sections: Array<string | undefined | null>) {
     .join("\n\n");
 }
 
-function normalizeDisabledOrchestrationTabIds(value: unknown) {
-  return Array.from(
-    new Set(
-      Array.isArray(value)
-        ? value
-            .map((item) => Number(item))
-            .filter((item) => Number.isInteger(item) && item > 0)
-        : [],
-    ),
-  );
-}
-
-function isOrchestrationTabEnabled(rawValue: unknown, tabId?: number | null) {
-  if (!Number.isInteger(tabId) || Number(tabId) <= 0) return true;
-  const disabledSet = new Set(normalizeDisabledOrchestrationTabIds(rawValue));
-  return !disabledSet.has(Number(tabId));
-}
-
 async function resolveSystemInstructionContext(sender) {
   const tabId = sender?.tab?.id;
   const siteKey = getSiteScopeKeyFromSender(sender);
@@ -196,18 +178,11 @@ async function resolveSystemInstructionContext(sender) {
     }),
     new Promise<Record<string, unknown>>((resolve) => {
       chrome.storage.session.get(
-        [
-          SYSTEM_INSTRUCTION_TAB_SELECTION_STORAGE_KEY,
-          ORCHESTRATION_DISABLED_STORAGE_KEY,
-        ],
+        [SYSTEM_INSTRUCTION_TAB_SELECTION_STORAGE_KEY],
         (result) => resolve(result as Record<string, unknown>),
       );
     }),
   ]);
-  const tabPluginEnabled = isOrchestrationTabEnabled(
-    sessionState[ORCHESTRATION_DISABLED_STORAGE_KEY],
-    tabId,
-  );
 
   const presetStore = normalizeSystemInstructionPresetStore(
     localState[SYSTEM_INSTRUCTION_PRESETS_STORAGE_KEY] || DEFAULT_SYSTEM_INSTRUCTION_PRESET_STORE,
@@ -231,6 +206,7 @@ async function resolveSystemInstructionContext(sender) {
   const siteConfig = siteKey
     ? normalizeSiteConfig((normalizedSiteConfigMap[siteKey] as any) || {})
     : normalizeSiteConfig({});
+  const tabPluginEnabled = !siteKey || isSiteConfigEnabled(siteConfig);
   const adapterScript = String(siteConfig?.adapterScript || "").trim();
 
   const mcpState = await getStoredMcpState();

@@ -10,12 +10,10 @@ type PageContext = Record<string, any>;
 
 export function useSidepanelControllerEffects(ctx: any) {
   const {
-    ORCHESTRATION_DISABLED_STORAGE_KEY,
     hosts,
     pendingDeleteHost,
     tip,
     activePane,
-    disabledOrchestrationTabIds,
     orchestrationStateReady,
     screen,
     currentHost,
@@ -26,26 +24,22 @@ export function useSidepanelControllerEffects(ctx: any) {
     setTip,
     setSettings,
     setSiteConfigMap,
-    setDisabledOrchestrationTabIds,
     setScreen,
     siteConfigMapRef,
     refreshTimerRef,
     activePaneRef,
     draftRef,
     editorHostRef,
-    disabledOrchestrationTabIdsRef,
     editorFrameIdRef,
     currentFrameIdRef,
     frameContextsRef,
     loadSettings,
     loadSiteConfigMap,
-    loadOrchestrationState,
     refreshActiveTabContext,
     refreshOrchestrationTabs,
     scheduleRefresh,
     resetEditor,
     showTip,
-    normalizeDisabledOrchestrationTabIds,
     storeFrameContext,
     chooseBestFrameContext,
     applyContext,
@@ -56,7 +50,6 @@ export function useSidepanelControllerEffects(ctx: any) {
       await Promise.all([
         loadSettings(),
         loadSiteConfigMap(),
-        loadOrchestrationState(),
         refreshActiveTabContext(),
       ]);
       setOrchestrationStateReady(true);
@@ -88,7 +81,7 @@ export function useSidepanelControllerEffects(ctx: any) {
   useEffect(() => {
     if (!orchestrationStateReady || activePane !== "orchestration") return;
     void refreshOrchestrationTabs({ syncGroups: true });
-  }, [activePane, siteConfigMap, disabledOrchestrationTabIds, orchestrationStateReady]);
+  }, [activePane, siteConfigMap, orchestrationStateReady]);
 
   useEffect(() => {
     function handleStorageChange(changes: any, namespace: string) {
@@ -117,13 +110,6 @@ export function useSidepanelControllerEffects(ctx: any) {
         }
       }
 
-      if (namespace === "session" && changes[ORCHESTRATION_DISABLED_STORAGE_KEY]) {
-        const nextIds = normalizeDisabledOrchestrationTabIds(
-          changes[ORCHESTRATION_DISABLED_STORAGE_KEY].newValue,
-        );
-        disabledOrchestrationTabIdsRef.current = nextIds;
-        setDisabledOrchestrationTabIds(nextIds);
-      }
     }
 
     chrome.storage.onChanged.addListener(handleStorageChange);
@@ -141,10 +127,6 @@ export function useSidepanelControllerEffects(ctx: any) {
   useEffect(() => {
     siteConfigMapRef.current = siteConfigMap;
   }, [siteConfigMap]);
-
-  useEffect(() => {
-    disabledOrchestrationTabIdsRef.current = disabledOrchestrationTabIds;
-  }, [disabledOrchestrationTabIds]);
 
   useEffect(() => {
     if (screen !== "editor") return;

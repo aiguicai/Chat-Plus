@@ -3,6 +3,7 @@ import { getSiteAdapterStatus } from "./siteAdapter";
 import { normalizeSiteAdapterScript } from "./siteAdapterShared";
 
 export const SITE_CONFIG_MAP_STORAGE_KEY = "siteConfigMap";
+export const DEFAULT_SITE_ENABLED = true;
 
 const asStoredConfigMap = (value: unknown) =>
   value && typeof value === "object" && !Array.isArray(value)
@@ -11,7 +12,8 @@ const asStoredConfigMap = (value: unknown) =>
 
 export function normalizeSiteConfig(config?: SiteConfig): SiteConfig {
   const adapterScript = normalizeSiteAdapterScript(config?.adapterScript);
-  return adapterScript ? { adapterScript } : {};
+  const enabled = config?.enabled !== false;
+  return adapterScript ? { enabled, adapterScript } : {};
 }
 
 export function compactSiteConfig(config?: SiteConfig): SiteConfig {
@@ -46,6 +48,10 @@ export function hasConfigData(config?: SiteConfig) {
 
 export const hasValidConfigData = hasConfigData;
 
+export function isSiteConfigEnabled(config?: SiteConfig) {
+  return normalizeSiteConfig(config).enabled !== false;
+}
+
 export function getSelectableHosts(configMap: ConfigMap, currentHost: string) {
   const hosts = Object.keys(configMap).filter((host) => hasValidConfigData(configMap[host]));
   const ordered = [
@@ -61,6 +67,10 @@ export function siteMeta(host: string, currentHost: string, config: SiteConfig):
 } {
   if (host === currentHost && !hasValidConfigData(config)) {
     return { label: "未配置", tone: "danger" };
+  }
+
+  if (hasValidConfigData(config) && !isSiteConfigEnabled(config)) {
+    return { label: "已停用", tone: "warning" };
   }
 
   return { label: "已保存", tone: "success" };

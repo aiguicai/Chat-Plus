@@ -91,7 +91,7 @@ export function LibraryScreen({
           >
             <>
               <ExportAllIcon />
-              <span className="cp-library-action-text">导出</span>
+              <span className="cp-library-action-text">导出站点</span>
             </>
           </ToolbarIconButton>
           <ToolbarIconButton
@@ -101,7 +101,7 @@ export function LibraryScreen({
           >
             <>
               <ImportIcon />
-              <span className="cp-library-action-text">导入</span>
+              <span className="cp-library-action-text">导入站点</span>
             </>
           </ToolbarIconButton>
         </div>

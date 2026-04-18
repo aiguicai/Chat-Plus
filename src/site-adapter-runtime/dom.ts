@@ -42,6 +42,7 @@ type BuildDomContinuationPlanOptions = {
 const INJECTED_USER_MARKER = "【⚙】";
 const INJECTED_USER_SPLIT_LABEL = "下面是用户的提问：";
 const RENDERED_PROTOCOL_CARD_ATTR = "data-chat-plus-rendered-protocol-card";
+const CODE_MODE_RAW_SOURCE_ATTR = "data-chat-plus-code-mode-raw";
 
 export function normalizeSelectorArray(value: unknown) {
   if (typeof value === "string") {
@@ -165,20 +166,6 @@ export function readNodeText(node: Node | null | undefined) {
 
   walk(node);
   return normalizeMultilineText(parts.join("")).replace(/\n{3,}/g, "\n\n").trim();
-}
-
-function formatCodeModeDisplayText(text: unknown) {
-  const source = normalizeMultilineText(text).trim();
-  if (!source || source.includes("\n")) return source;
-
-  return source
-    .replace(/;\s*(?=(const|let|var|return|if|for|while|try|\}))/g, ";\n")
-    .replace(/\{\s*(?=(const|let|var|return|if|for|while|try))/g, "{\n")
-    .replace(/\}\s*(?=(else|catch|finally))/g, "}\n")
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .join("\n");
 }
 
 function formatInjectedUserDisplayText(text: string) {
@@ -451,9 +438,10 @@ export function renderProtocolCard(
     "border-top:1px solid " + theme.accent,
   ].join(";");
   const body = documentRef.createElement("pre");
-  body.textContent = kind === "codeMode" ? formatCodeModeDisplayText(rawBlock) : rawBlock;
+  body.textContent = rawBlock;
   if (kind === "codeMode") {
     body.setAttribute("data-chat-plus-code-mode-source", "1");
+    body.setAttribute(CODE_MODE_RAW_SOURCE_ATTR, rawBlock);
   }
   body.style.cssText = [
     "white-space:pre-wrap",

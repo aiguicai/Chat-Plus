@@ -212,6 +212,29 @@ test("decorateProtocolBubbles renders a code mode card with manual run wiring", 
   assert.ok(document.querySelector('[data-chat-plus-code-mode-source="1"]'));
 });
 
+test("decorateProtocolBubbles keeps raw code source for manual code mode run", () => {
+  const rawCode = "const x=1;const y=2;return x+y;";
+  const document = createDom(`
+    <div class="user">hello</div>
+    <div class="assistant">
+      ${protocol.codeMode.begin}
+      ${rawCode}
+      ${protocol.codeMode.end}
+    </div>
+  `);
+  decorateProtocolBubbles({
+    root: document,
+    protocol,
+    userSelectors: [".user"],
+    assistantSelectors: [".assistant"],
+  });
+
+  const sourceNode = document.querySelector('[data-chat-plus-code-mode-source="1"]');
+  assert.ok(sourceNode);
+  assert.equal(sourceNode?.getAttribute("data-chat-plus-code-mode-raw"), rawCode);
+  assert.equal((sourceNode?.textContent || "").trim(), rawCode);
+});
+
 test("decorateProtocolBubbles gives failed tool results a failure badge", () => {
   const document = createDom(`
     <div class="user">hello</div>
