@@ -1,5 +1,7 @@
 import {
   CODE_MODE_AUTO_CONTINUE_STORAGE_KEY,
+  CODE_MODE_AUTO_CONTINUE_DELAY_STORAGE_KEY,
+  normalizeCodeModeAutoContinueDelaySeconds,
   type ContentRuntimeState,
 } from "./contentRuntimeState";
 import { wrapChatPlusInjection } from "../../shared/chatplus-protocol";
@@ -43,6 +45,12 @@ export function createSystemInjectionTrackingController({
     return value !== false;
   }
 
+  function persistCodeModeAutoContinueDelaySeconds(seconds: number) {
+    chrome.storage.sync.set({
+      [CODE_MODE_AUTO_CONTINUE_DELAY_STORAGE_KEY]: normalizeCodeModeAutoContinueDelaySeconds(seconds),
+    });
+  }
+
   function persistCodeModeAutoContinueEnabled(enabled: boolean) {
     chrome.storage.sync.set({
       [CODE_MODE_AUTO_CONTINUE_STORAGE_KEY]: enabled !== false,
@@ -54,6 +62,14 @@ export function createSystemInjectionTrackingController({
     renderSystemInjectionWidget();
     if (persist) {
       persistCodeModeAutoContinueEnabled(state.codeMode.autoContinueEnabled);
+    }
+  }
+
+  function setCodeModeAutoContinueDelaySeconds(value: unknown, persist = false) {
+    state.codeMode.autoContinueDelaySeconds = normalizeCodeModeAutoContinueDelaySeconds(value);
+    renderSystemInjectionWidget();
+    if (persist) {
+      persistCodeModeAutoContinueDelaySeconds(state.codeMode.autoContinueDelaySeconds);
     }
   }
 
@@ -166,21 +182,32 @@ export function createSystemInjectionTrackingController({
   }
 
   function loadSettings() {
-    chrome.storage.sync.get(["enabled", "theme", CODE_MODE_AUTO_CONTINUE_STORAGE_KEY], (cfg) => {
-      const previousRuntimeEnabled = isPluginRuntimeEnabled();
-      state.isEnabled = cfg.enabled !== false;
-      state.uiTheme = cfg.theme === "light" ? "light" : "dark";
-      state.codeMode.autoContinueEnabled = normalizeCodeModeAutoContinueEnabled(
-        cfg[CODE_MODE_AUTO_CONTINUE_STORAGE_KEY],
-      );
-      if (previousRuntimeEnabled && !isPluginRuntimeEnabled()) {
-        clearPluginRuntimeEffects();
-      }
-      syncBubbleDecorationObserver();
-      renderSystemInjectionWidget();
-      renderCodeModeStatusBar();
-      dispatchMonitorControl(state.monitorActive);
-    });
+    chrome.storage.sync.get(
+      [
+        "enabled",
+        "theme",
+        CODE_MODE_AUTO_CONTINUE_STORAGE_KEY,
+        CODE_MODE_AUTO_CONTINUE_DELAY_STORAGE_KEY,
+      ],
+      (cfg) => {
+        const previousRuntimeEnabled = isPluginRuntimeEnabled();
+        state.isEnabled = cfg.enabled !== false;
+        state.uiTheme = cfg.theme === "light" ? "light" : "dark";
+        state.codeMode.autoContinueEnabled = normalizeCodeModeAutoContinueEnabled(
+          cfg[CODE_MODE_AUTO_CONTINUE_STORAGE_KEY],
+        );
+        state.codeMode.autoContinueDelaySeconds = normalizeCodeModeAutoContinueDelaySeconds(
+          cfg[CODE_MODE_AUTO_CONTINUE_DELAY_STORAGE_KEY],
+        );
+        if (previousRuntimeEnabled && !isPluginRuntimeEnabled()) {
+          clearPluginRuntimeEffects();
+        }
+        syncBubbleDecorationObserver();
+        renderSystemInjectionWidget();
+        renderCodeModeStatusBar();
+        dispatchMonitorControl(state.monitorActive);
+      },
+    );
   }
 
   return {
@@ -188,6 +215,7 @@ export function createSystemInjectionTrackingController({
     buildSystemInjectionSignature,
     hasSystemInstructionContent,
     normalizeCodeModeAutoContinueEnabled,
+    setCodeModeAutoContinueDelaySeconds,
     setCodeModeAutoContinueEnabled,
     setSystemInjectionArmed,
     syncSystemInjectionArmState,

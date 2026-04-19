@@ -9,6 +9,8 @@ export const ADAPTER_SNAPSHOT_NODE_ATTR = "data-chat-plus-sandbox-node-id";
 export const CODE_MODE_STATUS_BAR_ID = "chat-plus-code-mode-status-bar";
 export const CODE_MODE_STATUS_BAR_POSITION_STORAGE_KEY = "chat-plus-code-mode-status-bar-position";
 export const CODE_MODE_AUTO_CONTINUE_STORAGE_KEY = "chat-plus-code-mode-auto-continue-enabled";
+export const CODE_MODE_AUTO_CONTINUE_DELAY_STORAGE_KEY =
+  "chat-plus-code-mode-auto-continue-delay-seconds";
 export const CODE_MODE_RECENT_EXECUTION_TTL_MS = 45000;
 export const CODE_MODE_MANUAL_RUN_TRIGGER_ATTR = "data-chat-plus-code-mode-run";
 export const CODE_MODE_MANUAL_RUN_CARD_ATTR = "data-chat-plus-code-mode-card";
@@ -16,6 +18,17 @@ export const CODE_MODE_MANUAL_RUN_SOURCE_ATTR = "data-chat-plus-code-mode-source
 export const SYSTEM_INJECTION_WIDGET_ID = "chat-plus-system-injection-widget";
 export const SYSTEM_INJECTION_WIDGET_POSITION_STORAGE_KEY =
   "chat-plus-system-injection-widget-position";
+
+export function normalizeCodeModeAutoContinueDelaySeconds(value: unknown) {
+  if (value == null || String(value).trim() === "") {
+    return 5;
+  }
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    return 5;
+  }
+  return Math.max(0, Math.floor(parsed));
+}
 
 export function createContentRuntimeState() {
   return {
@@ -66,6 +79,7 @@ export function createContentRuntimeState() {
       collapseButton: null as HTMLButtonElement | null,
       autoContinueToggle: null as HTMLButtonElement | null,
       autoContinueThumb: null as HTMLSpanElement | null,
+      autoContinueDelayInput: null as HTMLInputElement | null,
       nextSendToggle: null as HTMLButtonElement | null,
       nextSendThumb: null as HTMLSpanElement | null,
       compressButton: null as HTMLButtonElement | null,
@@ -106,6 +120,7 @@ export function createContentRuntimeState() {
       pendingToolResultText: "",
       manualPreparedToolResultText: "",
       autoContinueEnabled: true,
+      autoContinueDelaySeconds: normalizeCodeModeAutoContinueDelaySeconds(5),
       autoContinueInFlight: false,
       autoContinueFallbackTimerId: 0,
       running: false,

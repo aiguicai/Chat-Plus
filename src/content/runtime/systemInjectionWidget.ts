@@ -8,6 +8,7 @@ type CreateSystemInjectionWidgetControllerOptions = {
   state: ContentRuntimeState;
   shouldShowSystemInjectionWidget: () => boolean;
   setCodeModeAutoContinueEnabled: (value: unknown, persist?: boolean) => void;
+  setCodeModeAutoContinueDelaySeconds: (value: unknown, persist?: boolean) => void;
   setSystemInjectionArmed: (armed: boolean, reason?: "" | "config" | "manual" | "url") => void;
   getSystemInjectionStatusText: () => string;
   syncRequestInjectionToMonitor: () => void;
@@ -22,6 +23,7 @@ export function createSystemInjectionWidgetController({
   state,
   shouldShowSystemInjectionWidget,
   setCodeModeAutoContinueEnabled,
+  setCodeModeAutoContinueDelaySeconds,
   setSystemInjectionArmed,
   getSystemInjectionStatusText,
   syncRequestInjectionToMonitor,
@@ -217,6 +219,9 @@ export function createSystemInjectionWidgetController({
       const existingAutoContinueThumb = existingRoot.querySelector(
         "[data-role='auto-continue-thumb']",
       ) as HTMLSpanElement | null;
+      const existingAutoContinueDelayInput = existingRoot.querySelector(
+        "[data-role='auto-continue-delay-input']",
+      ) as HTMLInputElement | null;
       const existingNextSendToggle = existingRoot.querySelector(
         "[data-role='next-send-toggle']",
       ) as HTMLButtonElement | null;
@@ -239,6 +244,7 @@ export function createSystemInjectionWidgetController({
         !existingCollapseButton ||
         !existingAutoContinueToggle ||
         !existingAutoContinueThumb ||
+        !existingAutoContinueDelayInput ||
         !existingNextSendToggle ||
         !existingNextSendThumb ||
         !existingCompressButton ||
@@ -254,6 +260,7 @@ export function createSystemInjectionWidgetController({
         state.systemInjectionWidget.collapseButton = existingCollapseButton;
         state.systemInjectionWidget.autoContinueToggle = existingAutoContinueToggle;
         state.systemInjectionWidget.autoContinueThumb = existingAutoContinueThumb;
+        state.systemInjectionWidget.autoContinueDelayInput = existingAutoContinueDelayInput;
         state.systemInjectionWidget.nextSendToggle = existingNextSendToggle;
         state.systemInjectionWidget.nextSendThumb = existingNextSendThumb;
         state.systemInjectionWidget.compressButton = existingCompressButton;
@@ -448,6 +455,90 @@ export function createSystemInjectionWidgetController({
     autoContinueRow.appendChild(autoContinueLabel);
     autoContinueRow.appendChild(autoContinueToggle);
 
+    const autoContinueDelayRow = document.createElement("div");
+    autoContinueDelayRow.setAttribute("data-role", "auto-continue-delay-row");
+    autoContinueDelayRow.style.display = "flex";
+    autoContinueDelayRow.style.alignItems = "center";
+    autoContinueDelayRow.style.justifyContent = "space-between";
+    autoContinueDelayRow.style.gap = "10px";
+    autoContinueDelayRow.style.padding = "10px 0";
+    autoContinueDelayRow.style.borderTop = "1px solid transparent";
+
+    const autoContinueDelayLabel = document.createElement("div");
+    autoContinueDelayLabel.style.flex = "1 1 auto";
+    autoContinueDelayLabel.style.minWidth = "0";
+    autoContinueDelayLabel.style.display = "flex";
+    autoContinueDelayLabel.style.flexDirection = "column";
+    autoContinueDelayLabel.style.gap = "4px";
+
+    const autoContinueDelayTitle = document.createElement("div");
+    autoContinueDelayTitle.textContent = "自动发送延迟";
+    autoContinueDelayTitle.style.fontSize = "11px";
+    autoContinueDelayTitle.style.fontWeight = "700";
+    autoContinueDelayTitle.style.lineHeight = "1.25";
+
+    const autoContinueDelayHint = document.createElement("div");
+    autoContinueDelayHint.textContent = "0 为自动发送";
+    autoContinueDelayHint.style.fontSize = "10px";
+    autoContinueDelayHint.style.lineHeight = "1.25";
+    autoContinueDelayHint.style.opacity = "0.72";
+
+    autoContinueDelayLabel.appendChild(autoContinueDelayTitle);
+    autoContinueDelayLabel.appendChild(autoContinueDelayHint);
+
+    const autoContinueDelayControl = document.createElement("div");
+    autoContinueDelayControl.style.flex = "0 0 auto";
+    autoContinueDelayControl.style.display = "inline-flex";
+    autoContinueDelayControl.style.alignItems = "center";
+    autoContinueDelayControl.style.gap = "6px";
+    autoContinueDelayControl.style.padding = "4px 6px 4px 10px";
+    autoContinueDelayControl.style.borderRadius = "999px";
+    autoContinueDelayControl.style.border = "1px solid transparent";
+
+    const autoContinueDelayInput = document.createElement("input");
+    autoContinueDelayInput.type = "number";
+    autoContinueDelayInput.min = "0";
+    autoContinueDelayInput.step = "1";
+    autoContinueDelayInput.inputMode = "numeric";
+    autoContinueDelayInput.setAttribute("data-role", "auto-continue-delay-input");
+    autoContinueDelayInput.setAttribute("aria-label", "自动发送延迟秒数");
+    autoContinueDelayInput.style.width = "52px";
+    autoContinueDelayInput.style.padding = "0";
+    autoContinueDelayInput.style.border = "none";
+    autoContinueDelayInput.style.outline = "none";
+    autoContinueDelayInput.style.background = "transparent";
+    autoContinueDelayInput.style.fontSize = "12px";
+    autoContinueDelayInput.style.fontWeight = "700";
+    autoContinueDelayInput.style.textAlign = "right";
+
+    const commitAutoContinueDelayInput = () => {
+      setCodeModeAutoContinueDelaySeconds(autoContinueDelayInput.value, true);
+      autoContinueDelayInput.value = String(state.codeMode.autoContinueDelaySeconds);
+    };
+
+    autoContinueDelayInput.onblur = () => {
+      commitAutoContinueDelayInput();
+    };
+    autoContinueDelayInput.onkeydown = (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        commitAutoContinueDelayInput();
+        autoContinueDelayInput.blur();
+      }
+    };
+
+    const autoContinueDelayUnit = document.createElement("span");
+    autoContinueDelayUnit.textContent = "秒";
+    autoContinueDelayUnit.style.fontSize = "10px";
+    autoContinueDelayUnit.style.fontWeight = "700";
+    autoContinueDelayUnit.style.lineHeight = "1";
+    autoContinueDelayUnit.style.opacity = "0.72";
+
+    autoContinueDelayControl.appendChild(autoContinueDelayInput);
+    autoContinueDelayControl.appendChild(autoContinueDelayUnit);
+    autoContinueDelayRow.appendChild(autoContinueDelayLabel);
+    autoContinueDelayRow.appendChild(autoContinueDelayControl);
+
     const nextSendRow = document.createElement("div");
     nextSendRow.setAttribute("data-role", "next-send-row");
     nextSendRow.style.display = "flex";
@@ -599,6 +690,7 @@ export function createSystemInjectionWidgetController({
     compressButton.appendChild(compressButtonMeta);
 
     settingsGroup.appendChild(autoContinueRow);
+    settingsGroup.appendChild(autoContinueDelayRow);
     settingsGroup.appendChild(nextSendRow);
     compressRow.appendChild(compressButton);
 
@@ -728,6 +820,7 @@ export function createSystemInjectionWidgetController({
     state.systemInjectionWidget.collapseButton = collapseButton;
     state.systemInjectionWidget.autoContinueToggle = autoContinueToggle;
     state.systemInjectionWidget.autoContinueThumb = autoContinueThumb;
+    state.systemInjectionWidget.autoContinueDelayInput = autoContinueDelayInput;
     state.systemInjectionWidget.nextSendToggle = nextSendToggle;
     state.systemInjectionWidget.nextSendThumb = nextSendThumb;
     state.systemInjectionWidget.compressButton = compressButton;
@@ -795,6 +888,7 @@ export function createSystemInjectionWidgetController({
     const collapseButton = state.systemInjectionWidget.collapseButton;
     const autoContinueToggle = state.systemInjectionWidget.autoContinueToggle;
     const autoContinueThumb = state.systemInjectionWidget.autoContinueThumb;
+    const autoContinueDelayInput = state.systemInjectionWidget.autoContinueDelayInput;
     const nextSendToggle = state.systemInjectionWidget.nextSendToggle;
     const nextSendThumb = state.systemInjectionWidget.nextSendThumb;
     const compressButton = state.systemInjectionWidget.compressButton;
@@ -806,6 +900,7 @@ export function createSystemInjectionWidgetController({
       !collapseButton ||
       !autoContinueToggle ||
       !autoContinueThumb ||
+      !autoContinueDelayInput ||
       !nextSendToggle ||
       !nextSendThumb ||
       !compressButton ||
@@ -819,6 +914,10 @@ export function createSystemInjectionWidgetController({
     const isCollapsed = state.systemInjectionWidget.collapsed;
     const hasInstructionContent = Boolean(String(state.systemInstructionContent || "").trim());
     const autoContinueEnabled = state.codeMode.autoContinueEnabled;
+    const autoContinueDelaySeconds = Math.max(
+      0,
+      Number(state.codeMode.autoContinueDelaySeconds || 0),
+    );
     const nextSendEnabled = state.systemInjection.armed && hasInstructionContent;
     const statusText = getSystemInjectionStatusText();
     const compressRunning = state.systemInjectionWidget.compressRequestRunning;
@@ -886,6 +985,11 @@ export function createSystemInjectionWidgetController({
     const autoContinueRow = autoContinueToggle.parentElement as HTMLDivElement | null;
     const autoContinueLabel = autoContinueRow?.firstElementChild as HTMLDivElement | null;
     const autoContinueHint = autoContinueLabel?.lastElementChild as HTMLDivElement | null;
+    const autoContinueDelayRow = autoContinueDelayInput.closest(
+      "[data-role='auto-continue-delay-row']",
+    ) as HTMLDivElement | null;
+    const autoContinueDelayLabel = autoContinueDelayRow?.firstElementChild as HTMLDivElement | null;
+    const autoContinueDelayControl = autoContinueDelayRow?.lastElementChild as HTMLDivElement | null;
     if (autoContinueRow) {
       autoContinueRow.style.background = "transparent";
       autoContinueRow.style.border = "none";
@@ -912,6 +1016,31 @@ export function createSystemInjectionWidgetController({
     }
     autoContinueToggle.title = autoContinueEnabled ? "已开启自动发送" : "已关闭自动发送";
     applySwitchStyle(autoContinueToggle, autoContinueThumb, autoContinueEnabled, isLight);
+
+    if (autoContinueDelayRow) {
+      autoContinueDelayRow.style.background = "transparent";
+      autoContinueDelayRow.style.border = "none";
+      autoContinueDelayRow.style.borderTop = `1px solid ${
+        isLight ? "rgba(92, 107, 115, 0.10)" : "rgba(180, 170, 158, 0.12)"
+      }`;
+    }
+    if (autoContinueDelayLabel) {
+      autoContinueDelayLabel.style.color = isLight ? "#2e2924" : "#ece7e1";
+    }
+    if (autoContinueDelayControl) {
+      autoContinueDelayControl.style.background = isLight
+        ? "rgba(92, 107, 115, 0.06)"
+        : "rgba(255,255,255,0.05)";
+      autoContinueDelayControl.style.borderColor = isLight
+        ? "rgba(92, 107, 115, 0.14)"
+        : "rgba(180, 170, 158, 0.14)";
+      autoContinueDelayControl.style.color = isLight ? "#2e2924" : "#ece7e1";
+      autoContinueDelayControl.style.boxShadow = isLight
+        ? "inset 0 1px 0 rgba(255,255,255,0.68)"
+        : "inset 0 1px 0 rgba(255,255,255,0.03)";
+    }
+    autoContinueDelayInput.value = String(autoContinueDelaySeconds);
+    autoContinueDelayInput.style.color = isLight ? "#2e2924" : "#ece7e1";
 
     const nextSendRow = nextSendToggle.parentElement as HTMLDivElement | null;
     const nextSendLabel = nextSendRow?.firstElementChild as HTMLDivElement | null;

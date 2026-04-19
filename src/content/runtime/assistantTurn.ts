@@ -14,6 +14,10 @@ export function markExpectedAssistantTurn(
   state.pageContext.expectedAssistantTurn = true;
   state.pageContext.expectedAssistantTurnAt = now;
   state.pageContext.expectedAssistantTurnSource = source;
+  if (state.bubbleDecorationFallback) {
+    state.bubbleDecorationFallback.responseContentPreview = "";
+    state.bubbleDecorationFallback.responseUpdatedAt = 0;
+  }
 }
 
 export function clearExpectedAssistantTurn(state: ContentRuntimeState) {

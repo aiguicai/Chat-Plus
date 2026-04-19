@@ -90,6 +90,26 @@ export function createContinuationController({
     state.codeMode.autoContinueFallbackTimerId = 0;
   }
 
+  function getAutoContinueDelayMs() {
+    const seconds = Math.max(0, Number(state.codeMode.autoContinueDelaySeconds || 0));
+    return Math.floor(seconds * 1000);
+  }
+
+  async function waitForAutoContinueDelay() {
+    const delayMs = getAutoContinueDelayMs();
+    if (delayMs <= 0) return;
+
+    const delaySeconds = Math.floor(delayMs / 1000);
+    state.codeMode.statusTone = "running";
+    state.codeMode.statusText = "等待自动发送";
+    state.codeMode.detailText = `已生成续发内容，${delaySeconds} 秒后发送`;
+    renderCodeModeStatusBar();
+
+    await new Promise<void>((resolve) => {
+      window.setTimeout(resolve, delayMs);
+    });
+  }
+
   let manualInjectionPlanRefreshTimerId = 0;
   let manualInjectionPlanRefreshRunning = false;
   let manualInjectionPlanRefreshQueued = false;
@@ -1225,6 +1245,15 @@ export function createContinuationController({
       setPendingToolResultState(nextText, {
         autoContinueInFlight: true,
       });
+      await waitForAutoContinueDelay();
+      if (!isPluginRuntimeEnabled()) {
+        setPendingToolResultState(nextText);
+        return {
+          ok: false as const,
+          queuedForNextRequest: true,
+          error: "当前页面已关闭 Chat Plus；已保留到下一次发送",
+        };
+      }
 
       const execution = await tryContinueConversationPlans(planCandidates, nextText);
       if (execution.ok) {

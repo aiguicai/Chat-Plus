@@ -2,7 +2,7 @@
   "name": "chat-plus-extension",
   "description": "Open-source browser extension for adapter-driven MCP orchestration on AI chat websites.",
   "private": true,
-  "version": "0.0.3",
+  "version": "0.0.4",
   "type": "module",
   "scripts": {
     "version:sync": "node scripts/sync-version.mjs",

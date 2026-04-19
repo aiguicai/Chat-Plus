@@ -21,6 +21,7 @@ import {
   ADAPTER_HOOK_REQUEST_EVENT,
   ADAPTER_HOOK_RESPONSE_EVENT,
   CODE_MODE_AUTO_CONTINUE_STORAGE_KEY,
+  CODE_MODE_AUTO_CONTINUE_DELAY_STORAGE_KEY,
   CODE_MODE_MANUAL_RUN_CARD_ATTR,
   CODE_MODE_MANUAL_RUN_SOURCE_ATTR,
   CODE_MODE_MANUAL_RUN_TRIGGER_ATTR,
@@ -332,6 +333,8 @@ import {
     shouldShowSystemInjectionWidget,
     setCodeModeAutoContinueEnabled:
       systemInjectionTrackingController.setCodeModeAutoContinueEnabled,
+    setCodeModeAutoContinueDelaySeconds:
+      systemInjectionTrackingController.setCodeModeAutoContinueDelaySeconds,
     setSystemInjectionArmed: systemInjectionTrackingController.setSystemInjectionArmed,
     getSystemInjectionStatusText: systemInjectionTrackingController.getSystemInjectionStatusText,
     syncRequestInjectionToMonitor,
@@ -527,6 +530,11 @@ import {
     if (!normalized) return;
     state.bubbleDecorationFallback.responseContentPreview = normalized;
     state.bubbleDecorationFallback.responseUpdatedAt = Date.now();
+  }
+
+  function clearBubbleDecorationResponsePreview() {
+    state.bubbleDecorationFallback.responseContentPreview = "";
+    state.bubbleDecorationFallback.responseUpdatedAt = 0;
   }
 
   function buildCodeModeFeedbackText(response: Record<string, unknown> | null | undefined) {
@@ -894,6 +902,7 @@ import {
     if (detail.type === "injection") {
       if (!isPluginRuntimeEnabled()) return;
       rememberBubbleDecorationRequestPreview(detail?.requestMessagePreview);
+      clearBubbleDecorationResponsePreview();
       const pendingToolResultText = String(state.codeMode.pendingToolResultText || "").trim();
       const manualPreparedToolResultText = String(
         state.codeMode.manualPreparedToolResultText || "",
@@ -1097,7 +1106,12 @@ import {
   chrome.storage.onChanged.addListener((changes, namespace) => {
     if (
       namespace === "sync" &&
-      (changes.enabled || changes.theme || changes[CODE_MODE_AUTO_CONTINUE_STORAGE_KEY])
+      (
+        changes.enabled ||
+        changes.theme ||
+        changes[CODE_MODE_AUTO_CONTINUE_STORAGE_KEY] ||
+        changes[CODE_MODE_AUTO_CONTINUE_DELAY_STORAGE_KEY]
+      )
     ) {
       if (changes.enabled) {
         const previousRuntimeEnabled = isPluginRuntimeEnabled();
@@ -1121,6 +1135,12 @@ import {
             changes[CODE_MODE_AUTO_CONTINUE_STORAGE_KEY].newValue,
           );
         renderSystemInjectionWidget();
+      }
+      if (changes[CODE_MODE_AUTO_CONTINUE_DELAY_STORAGE_KEY]) {
+        systemInjectionTrackingController.setCodeModeAutoContinueDelaySeconds(
+          changes[CODE_MODE_AUTO_CONTINUE_DELAY_STORAGE_KEY].newValue,
+          false,
+        );
       }
       return;
     }
