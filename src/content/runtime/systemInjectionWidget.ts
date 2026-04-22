@@ -12,6 +12,7 @@ type CreateSystemInjectionWidgetControllerOptions = {
   setSystemInjectionArmed: (armed: boolean, reason?: "" | "config" | "manual" | "url") => void;
   getSystemInjectionStatusText: () => string;
   syncRequestInjectionToMonitor: () => void;
+  setScheduledSendEnabled: (enabled: boolean) => Promise<{ ok: boolean; error?: string }>;
   sendContextCompressionRequest: () => Promise<{
     ok: boolean;
     error?: string;
@@ -27,6 +28,7 @@ export function createSystemInjectionWidgetController({
   setSystemInjectionArmed,
   getSystemInjectionStatusText,
   syncRequestInjectionToMonitor,
+  setScheduledSendEnabled,
   sendContextCompressionRequest,
 }: CreateSystemInjectionWidgetControllerOptions) {
   const COLLAPSED_WIDGET_SIZE = 56;
@@ -48,6 +50,108 @@ export function createSystemInjectionWidgetController({
       window.clearTimeout(state.systemInjectionWidget.compressCooldownTimerId);
       state.systemInjectionWidget.compressCooldownTimerId = 0;
     }
+  }
+
+  function clearScheduledSendTickerTimer() {
+    if (state.systemInjectionWidget.scheduledSendTickerTimerId) {
+      window.clearTimeout(state.systemInjectionWidget.scheduledSendTickerTimerId);
+      state.systemInjectionWidget.scheduledSendTickerTimerId = 0;
+    }
+  }
+
+  function formatScheduledSendCountdownLabel() {
+    const nextRunAt = Number(state.scheduledSend.nextRunAt || 0);
+    if (!nextRunAt) return "";
+    const remainingSeconds = Math.max(0, Math.ceil((nextRunAt - Date.now()) / 1000));
+    return `${remainingSeconds}s`;
+  }
+
+  function getScheduledSendWidgetStatus() {
+    const config = state.scheduledSend.config;
+    const hasConfig = Boolean(config);
+    const hasContent = Boolean(String(config?.content || "").trim());
+    const enabled = Boolean(config?.enabled && hasContent);
+    const running = state.scheduledSend.running === true;
+    const lastError = String(state.scheduledSend.lastError || "").trim();
+    const countdownLabel = formatScheduledSendCountdownLabel();
+
+    if (!hasConfig) {
+      return {
+        hasConfig: false,
+        enabled: false,
+        statusLabel: "未配置",
+        metaLabel: "先去编排配置",
+        toggleDisabled: true,
+        title: "当前页面还没有定时发送配置",
+      };
+    }
+
+    if (!hasContent) {
+      return {
+        hasConfig: true,
+        enabled: false,
+        statusLabel: "未配置",
+        metaLabel: "内容为空",
+        toggleDisabled: true,
+        title: "发送内容为空，不能启用定时发送",
+      };
+    }
+
+    if (running) {
+      return {
+        hasConfig: true,
+        enabled: true,
+        statusLabel: "发送中",
+        metaLabel: "执行中",
+        toggleDisabled: false,
+        title: "定时发送正在执行",
+      };
+    }
+
+    if (enabled) {
+      return {
+        hasConfig: true,
+        enabled: true,
+        statusLabel: "已开启",
+        metaLabel: countdownLabel || "等待中",
+        toggleDisabled: false,
+        title: countdownLabel ? `距离下一次执行还有 ${countdownLabel}` : "定时发送已开启",
+      };
+    }
+
+    if (lastError) {
+      return {
+        hasConfig: true,
+        enabled: false,
+        statusLabel: "未开启",
+        metaLabel: "上次失败",
+        toggleDisabled: false,
+        title: lastError,
+      };
+    }
+
+    return {
+      hasConfig: true,
+      enabled: false,
+      statusLabel: "未开启",
+      metaLabel: "点击开启",
+      toggleDisabled: false,
+      title: "已保存定时发送配置，当前未开启",
+    };
+  }
+
+  function syncScheduledSendTicker() {
+    clearScheduledSendTickerTimer();
+    const config = state.scheduledSend.config;
+    if (!(config?.enabled && Number(state.scheduledSend.nextRunAt || 0) > Date.now())) {
+      return;
+    }
+
+    const delayMs = Math.max(200, Math.min(1000, Number(state.scheduledSend.nextRunAt || 0) - Date.now()));
+    state.systemInjectionWidget.scheduledSendTickerTimerId = window.setTimeout(() => {
+      state.systemInjectionWidget.scheduledSendTickerTimerId = 0;
+      renderSystemInjectionWidget();
+    }, delayMs);
   }
 
   function isCompressRequestCoolingDown() {
@@ -222,15 +326,24 @@ export function createSystemInjectionWidgetController({
       const existingAutoContinueDelayInput = existingRoot.querySelector(
         "[data-role='auto-continue-delay-input']",
       ) as HTMLInputElement | null;
-      const existingNextSendToggle = existingRoot.querySelector(
-        "[data-role='next-send-toggle']",
-      ) as HTMLButtonElement | null;
-      const existingNextSendThumb = existingRoot.querySelector(
-        "[data-role='next-send-thumb']",
-      ) as HTMLSpanElement | null;
-      const existingCompressButton = existingRoot.querySelector(
-        "[data-role='compress-button']",
-      ) as HTMLButtonElement | null;
+    const existingNextSendToggle = existingRoot.querySelector(
+      "[data-role='next-send-toggle']",
+    ) as HTMLButtonElement | null;
+    const existingNextSendThumb = existingRoot.querySelector(
+      "[data-role='next-send-thumb']",
+    ) as HTMLSpanElement | null;
+    const existingScheduledSendToggle = existingRoot.querySelector(
+      "[data-role='scheduled-send-toggle']",
+    ) as HTMLButtonElement | null;
+    const existingScheduledSendThumb = existingRoot.querySelector(
+      "[data-role='scheduled-send-thumb']",
+    ) as HTMLSpanElement | null;
+    const existingScheduledSendMeta = existingRoot.querySelector(
+      "[data-role='scheduled-send-meta']",
+    ) as HTMLSpanElement | null;
+    const existingCompressButton = existingRoot.querySelector(
+      "[data-role='compress-button']",
+    ) as HTMLButtonElement | null;
       const existingCompressButtonLabel = existingRoot.querySelector(
         "[data-role='compress-button-label']",
       ) as HTMLSpanElement | null;
@@ -247,6 +360,9 @@ export function createSystemInjectionWidgetController({
         !existingAutoContinueDelayInput ||
         !existingNextSendToggle ||
         !existingNextSendThumb ||
+        !existingScheduledSendToggle ||
+        !existingScheduledSendThumb ||
+        !existingScheduledSendMeta ||
         !existingCompressButton ||
         !existingCompressButtonLabel ||
         !existingCompressButtonMeta
@@ -263,6 +379,9 @@ export function createSystemInjectionWidgetController({
         state.systemInjectionWidget.autoContinueDelayInput = existingAutoContinueDelayInput;
         state.systemInjectionWidget.nextSendToggle = existingNextSendToggle;
         state.systemInjectionWidget.nextSendThumb = existingNextSendThumb;
+        state.systemInjectionWidget.scheduledSendToggle = existingScheduledSendToggle;
+        state.systemInjectionWidget.scheduledSendThumb = existingScheduledSendThumb;
+        state.systemInjectionWidget.scheduledSendMeta = existingScheduledSendMeta;
         state.systemInjectionWidget.compressButton = existingCompressButton;
         state.systemInjectionWidget.compressButtonLabel = existingCompressButtonLabel;
         state.systemInjectionWidget.compressButtonMeta = existingCompressButtonMeta;
@@ -608,6 +727,101 @@ export function createSystemInjectionWidgetController({
     nextSendRow.appendChild(nextSendLabel);
     nextSendRow.appendChild(nextSendToggle);
 
+    const scheduledSendRow = document.createElement("div");
+    scheduledSendRow.setAttribute("data-role", "scheduled-send-row");
+    scheduledSendRow.style.display = "flex";
+    scheduledSendRow.style.alignItems = "center";
+    scheduledSendRow.style.justifyContent = "space-between";
+    scheduledSendRow.style.gap = "10px";
+    scheduledSendRow.style.padding = "10px 0 6px";
+    scheduledSendRow.style.borderTop = "1px solid transparent";
+
+    const scheduledSendLabel = document.createElement("div");
+    scheduledSendLabel.style.flex = "1 1 auto";
+    scheduledSendLabel.style.minWidth = "0";
+    scheduledSendLabel.style.display = "flex";
+    scheduledSendLabel.style.flexDirection = "column";
+    scheduledSendLabel.style.gap = "4px";
+
+    const scheduledSendTitle = document.createElement("div");
+    scheduledSendTitle.textContent = "定时发送";
+    scheduledSendTitle.style.fontSize = "11px";
+    scheduledSendTitle.style.fontWeight = "700";
+    scheduledSendTitle.style.lineHeight = "1.25";
+
+    const scheduledSendHint = document.createElement("div");
+    scheduledSendHint.setAttribute("data-role", "scheduled-send-hint");
+    scheduledSendHint.style.display = "inline-flex";
+    scheduledSendHint.style.alignItems = "center";
+    scheduledSendHint.style.alignSelf = "flex-start";
+    scheduledSendHint.style.padding = "2px 8px";
+    scheduledSendHint.style.borderRadius = "999px";
+    scheduledSendHint.style.fontSize = "10px";
+    scheduledSendHint.style.lineHeight = "1.2";
+    scheduledSendHint.style.fontWeight = "700";
+
+    scheduledSendLabel.appendChild(scheduledSendTitle);
+    scheduledSendLabel.appendChild(scheduledSendHint);
+
+    const scheduledSendControl = document.createElement("div");
+    scheduledSendControl.style.flex = "0 0 auto";
+    scheduledSendControl.style.display = "inline-flex";
+    scheduledSendControl.style.alignItems = "center";
+    scheduledSendControl.style.gap = "8px";
+
+    const scheduledSendMeta = document.createElement("span");
+    scheduledSendMeta.setAttribute("data-role", "scheduled-send-meta");
+    scheduledSendMeta.style.display = "inline-flex";
+    scheduledSendMeta.style.alignItems = "center";
+    scheduledSendMeta.style.justifyContent = "center";
+    scheduledSendMeta.style.minWidth = "46px";
+    scheduledSendMeta.style.padding = "5px 8px";
+    scheduledSendMeta.style.borderRadius = "999px";
+    scheduledSendMeta.style.fontSize = "10px";
+    scheduledSendMeta.style.fontWeight = "800";
+    scheduledSendMeta.style.letterSpacing = "0.02em";
+    scheduledSendMeta.textContent = "未配置";
+
+    const scheduledSendToggle = document.createElement("button");
+    scheduledSendToggle.type = "button";
+    scheduledSendToggle.setAttribute("data-role", "scheduled-send-toggle");
+    scheduledSendToggle.setAttribute("role", "switch");
+    scheduledSendToggle.setAttribute("aria-label", "切换定时发送");
+    scheduledSendToggle.style.position = "relative";
+    scheduledSendToggle.style.flex = "0 0 auto";
+    scheduledSendToggle.style.width = "42px";
+    scheduledSendToggle.style.height = "24px";
+    scheduledSendToggle.style.padding = "0";
+    scheduledSendToggle.style.borderRadius = "999px";
+    scheduledSendToggle.style.transition =
+      "background 180ms ease, border-color 180ms ease, box-shadow 180ms ease, opacity 180ms ease";
+    scheduledSendToggle.onclick = () => {
+      const nextEnabled = !(state.scheduledSend.config?.enabled === true);
+      scheduledSendToggle.disabled = true;
+      void setScheduledSendEnabled(nextEnabled)
+        .finally(() => {
+          scheduledSendToggle.disabled = false;
+          renderSystemInjectionWidget();
+        });
+    };
+
+    const scheduledSendThumb = document.createElement("span");
+    scheduledSendThumb.setAttribute("data-role", "scheduled-send-thumb");
+    scheduledSendThumb.style.position = "absolute";
+    scheduledSendThumb.style.top = "2px";
+    scheduledSendThumb.style.left = "2px";
+    scheduledSendThumb.style.width = "18px";
+    scheduledSendThumb.style.height = "18px";
+    scheduledSendThumb.style.borderRadius = "999px";
+    scheduledSendThumb.style.transition =
+      "transform 180ms ease, background 180ms ease, box-shadow 180ms ease";
+
+    scheduledSendToggle.appendChild(scheduledSendThumb);
+    scheduledSendControl.appendChild(scheduledSendMeta);
+    scheduledSendControl.appendChild(scheduledSendToggle);
+    scheduledSendRow.appendChild(scheduledSendLabel);
+    scheduledSendRow.appendChild(scheduledSendControl);
+
     const compressRow = document.createElement("div");
     compressRow.setAttribute("data-role", "compress-row");
 
@@ -692,6 +906,7 @@ export function createSystemInjectionWidgetController({
     settingsGroup.appendChild(autoContinueRow);
     settingsGroup.appendChild(autoContinueDelayRow);
     settingsGroup.appendChild(nextSendRow);
+    settingsGroup.appendChild(scheduledSendRow);
     compressRow.appendChild(compressButton);
 
     panel.appendChild(dragHandle);
@@ -823,6 +1038,9 @@ export function createSystemInjectionWidgetController({
     state.systemInjectionWidget.autoContinueDelayInput = autoContinueDelayInput;
     state.systemInjectionWidget.nextSendToggle = nextSendToggle;
     state.systemInjectionWidget.nextSendThumb = nextSendThumb;
+    state.systemInjectionWidget.scheduledSendToggle = scheduledSendToggle;
+    state.systemInjectionWidget.scheduledSendThumb = scheduledSendThumb;
+    state.systemInjectionWidget.scheduledSendMeta = scheduledSendMeta;
     state.systemInjectionWidget.compressButton = compressButton;
     state.systemInjectionWidget.compressButtonLabel = compressButtonLabel;
     state.systemInjectionWidget.compressButtonMeta = compressButtonMeta;
@@ -876,6 +1094,7 @@ export function createSystemInjectionWidgetController({
       if (hiddenRoot?.isConnected) {
         hiddenRoot.style.display = "none";
       }
+      clearScheduledSendTickerTimer();
       return;
     }
 
@@ -891,6 +1110,9 @@ export function createSystemInjectionWidgetController({
     const autoContinueDelayInput = state.systemInjectionWidget.autoContinueDelayInput;
     const nextSendToggle = state.systemInjectionWidget.nextSendToggle;
     const nextSendThumb = state.systemInjectionWidget.nextSendThumb;
+    const scheduledSendToggle = state.systemInjectionWidget.scheduledSendToggle;
+    const scheduledSendThumb = state.systemInjectionWidget.scheduledSendThumb;
+    const scheduledSendMeta = state.systemInjectionWidget.scheduledSendMeta;
     const compressButton = state.systemInjectionWidget.compressButton;
     const compressButtonLabel = state.systemInjectionWidget.compressButtonLabel;
     const compressButtonMeta = state.systemInjectionWidget.compressButtonMeta;
@@ -903,6 +1125,9 @@ export function createSystemInjectionWidgetController({
       !autoContinueDelayInput ||
       !nextSendToggle ||
       !nextSendThumb ||
+      !scheduledSendToggle ||
+      !scheduledSendThumb ||
+      !scheduledSendMeta ||
       !compressButton ||
       !compressButtonLabel ||
       !compressButtonMeta
@@ -1085,6 +1310,71 @@ export function createSystemInjectionWidgetController({
       !hasInstructionContent,
     );
 
+    const scheduledSendState = getScheduledSendWidgetStatus();
+    const scheduledSendRow = scheduledSendToggle.closest(
+      "[data-role='scheduled-send-row']",
+    ) as HTMLDivElement | null;
+    const scheduledSendLabel = scheduledSendRow?.firstElementChild as HTMLDivElement | null;
+    const scheduledSendHint = scheduledSendLabel?.lastElementChild as HTMLDivElement | null;
+    if (scheduledSendRow) {
+      scheduledSendRow.style.background = "transparent";
+      scheduledSendRow.style.border = "none";
+      scheduledSendRow.style.borderTop = `1px solid ${
+        isLight ? "rgba(92, 107, 115, 0.10)" : "rgba(180, 170, 158, 0.12)"
+      }`;
+    }
+    if (scheduledSendLabel) {
+      scheduledSendLabel.style.color = isLight ? "#2e2924" : "#ece7e1";
+    }
+    if (scheduledSendHint) {
+      scheduledSendHint.textContent = scheduledSendState.statusLabel;
+      scheduledSendHint.style.color = scheduledSendState.enabled
+        ? isLight
+          ? "#8c5a1c"
+          : "#f0c57d"
+        : scheduledSendState.hasConfig
+          ? isLight
+            ? "#5d6771"
+            : "#c3b8ab"
+          : isLight
+            ? "#7f4e17"
+            : "#d8b377";
+      scheduledSendHint.style.background = scheduledSendState.enabled
+        ? isLight
+          ? "rgba(201, 150, 73, 0.12)"
+          : "rgba(214, 174, 105, 0.16)"
+        : scheduledSendState.hasConfig
+          ? isLight
+            ? "rgba(92, 107, 115, 0.08)"
+            : "rgba(180, 170, 158, 0.12)"
+          : isLight
+            ? "rgba(161, 108, 54, 0.10)"
+            : "rgba(218, 175, 97, 0.12)";
+    }
+    scheduledSendMeta.textContent = scheduledSendState.metaLabel;
+    scheduledSendMeta.style.color = scheduledSendState.enabled
+      ? isLight
+        ? "#7b4f15"
+        : "#f2cb87"
+      : isLight
+        ? "#5f666e"
+        : "#d7d0c7";
+    scheduledSendMeta.style.background = scheduledSendState.enabled
+      ? isLight
+        ? "rgba(161, 108, 54, 0.12)"
+        : "rgba(218, 175, 97, 0.14)"
+      : isLight
+        ? "rgba(115, 122, 128, 0.12)"
+        : "rgba(228, 221, 212, 0.12)";
+    scheduledSendToggle.title = scheduledSendState.title;
+    applySwitchStyle(
+      scheduledSendToggle,
+      scheduledSendThumb,
+      scheduledSendState.enabled,
+      isLight,
+      scheduledSendState.toggleDisabled,
+    );
+
     const compressRow = compressButton.parentElement as HTMLDivElement | null;
     if (compressRow) {
       compressRow.style.background = "transparent";
@@ -1158,6 +1448,7 @@ export function createSystemInjectionWidgetController({
           ? "rgba(161, 108, 54, 0.12)"
           : "rgba(218, 175, 97, 0.14)";
     compressButton.title = compressMessage;
+    syncScheduledSendTicker();
   }
 
   return {

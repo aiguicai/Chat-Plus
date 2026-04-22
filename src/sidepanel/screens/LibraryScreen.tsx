@@ -4,7 +4,6 @@ import { LibraryStat, ToolbarIconButton } from "../components/common";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
-  EditIcon,
   ExportAllIcon,
   ImportIcon,
 } from "../components/icons";
@@ -71,37 +70,25 @@ export function LibraryScreen({
           <LibraryStat label="站点数：" value={hosts.length} />
         </div>
         <div className="cp-toolbar-actions cp-library-toolbar">
-          {canEditCurrentHost ? (
-            <ToolbarIconButton
-              label={currentHost ? `编辑 ${currentHost}` : "编辑当前站点"}
-              className="cp-toolbar-icon-sm cp-library-action-btn"
-              onClick={onEditCurrentHost}
-            >
-              <>
-                <EditIcon />
-                <span className="cp-library-action-text">编辑</span>
-              </>
-            </ToolbarIconButton>
-          ) : null}
           <ToolbarIconButton
-            label="导出全部站点配置"
+            label="全部导出"
             disabled={!hasSavedSites}
             className="cp-toolbar-icon-sm cp-library-action-btn"
             onClick={onExportAll}
           >
             <>
               <ExportAllIcon />
-              <span className="cp-library-action-text">导出站点</span>
+              <span className="cp-library-action-text">全部导出</span>
             </>
           </ToolbarIconButton>
           <ToolbarIconButton
-            label="导入站点配置"
+            label="全部导入"
             className="cp-toolbar-icon-sm cp-library-action-btn"
             onClick={onImportClick}
           >
             <>
               <ImportIcon />
-              <span className="cp-library-action-text">导入站点</span>
+              <span className="cp-library-action-text">全部导入</span>
             </>
           </ToolbarIconButton>
         </div>
@@ -123,7 +110,9 @@ export function LibraryScreen({
                 currentHost={currentHost}
                 config={siteConfigMap[host] || {}}
                 pendingDelete={pendingDeleteHost === host}
+                canEdit={canEditCurrentHost && host === currentHost}
                 onOpen={() => onOpenHost(host)}
+                onEdit={onEditCurrentHost}
                 onExport={() => onExportHost(host)}
                 onArmDelete={() => onArmDelete(host)}
                 onConfirmDelete={() => onDeleteHost(host)}

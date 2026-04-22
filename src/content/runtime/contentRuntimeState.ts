@@ -71,6 +71,23 @@ export function createContentRuntimeState() {
       expectedAssistantTurnAt: 0,
       expectedAssistantTurnSource: "" as "" | "user" | "auto",
     },
+    scheduledSend: {
+      config: null as null | {
+        enabled: boolean;
+        content: string;
+        startTime: string;
+        endTime: string;
+        intervalSeconds: number;
+        createdAt: number;
+        updatedAt: number;
+      },
+      enabledAt: 0,
+      lastRunAt: 0,
+      nextRunAt: 0,
+      timerId: 0,
+      running: false,
+      lastError: "",
+    },
     systemInjectionWidget: {
       root: null as HTMLDivElement | null,
       panel: null as HTMLDivElement | null,
@@ -82,9 +99,13 @@ export function createContentRuntimeState() {
       autoContinueDelayInput: null as HTMLInputElement | null,
       nextSendToggle: null as HTMLButtonElement | null,
       nextSendThumb: null as HTMLSpanElement | null,
+      scheduledSendToggle: null as HTMLButtonElement | null,
+      scheduledSendThumb: null as HTMLSpanElement | null,
+      scheduledSendMeta: null as HTMLSpanElement | null,
       compressButton: null as HTMLButtonElement | null,
       compressButtonLabel: null as HTMLSpanElement | null,
       compressButtonMeta: null as HTMLSpanElement | null,
+      scheduledSendTickerTimerId: 0,
       compressRequestRunning: false,
       compressRequestStatus: "idle" as "idle" | "error" | "cooldown",
       compressRequestMessage: "",

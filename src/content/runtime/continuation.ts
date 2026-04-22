@@ -1282,7 +1282,10 @@ export function createContinuationController({
     }
   }
 
-  async function sendStandalonePrompt(promptText: string) {
+  async function sendStandalonePrompt(
+    promptText: string,
+    options?: { allowFillFallback?: boolean },
+  ) {
     const nextText = String(promptText || "").trim();
     if (!nextText) {
       return { ok: false as const, error: "缺少要发送的内容" };
@@ -1295,6 +1298,7 @@ export function createContinuationController({
     }
 
     try {
+      const allowFillFallback = options?.allowFillFallback !== false;
       const planCandidates: ContinueConversationPlanCandidate[] = [];
       const snapshot = getDecorationSnapshot();
       if (snapshot?.html) {
@@ -1326,6 +1330,13 @@ export function createContinuationController({
           ok: true as const,
           source: execution.source,
           delivery: "sent" as const,
+        };
+      }
+
+      if (!allowFillFallback) {
+        return {
+          ok: false as const,
+          error: execution.error,
         };
       }
 

@@ -11,6 +11,15 @@ import {
   SYSTEM_INSTRUCTION_TAB_SELECTION_STORAGE_KEY,
 } from "../system-instructions/shared";
 import {
+  SCHEDULED_SEND_TAB_CONFIG_STORAGE_KEY,
+  DEFAULT_SCHEDULED_SEND_TAB_CONFIG_STATE,
+  isScheduledSendConfigEnabled,
+  normalizeScheduledSendContent,
+  normalizeScheduledSendConfig,
+  normalizeScheduledSendTime,
+  parseScheduledSendTimeToMinutes,
+} from "../scheduled-send/shared";
+import {
   CHAT_PLUS_PROTOCOL,
   extractWrappedChatPlusBlock,
   wrapChatPlusInjection,
@@ -55,6 +64,8 @@ import {
   let continuationController: ReturnType<typeof createContinuationController>;
   let adapterSandboxController: ReturnType<typeof createAdapterSandboxController>;
   let systemInjectionWidgetController: ReturnType<typeof createSystemInjectionWidgetController>;
+  const SCHEDULED_SEND_MIN_RETRY_DELAY_MS = 2_000;
+  const SCHEDULED_SEND_MAX_RETRY_DELAY_MS = 15_000;
 
   function stringifyError(error: unknown) {
     if (error instanceof Error) {
@@ -254,7 +265,250 @@ import {
     dispatchMonitorControl(state.monitorActive);
   }
 
+  function clearScheduledSendTimer() {
+    if (!state.scheduledSend.timerId) return;
+    window.clearTimeout(state.scheduledSend.timerId);
+    state.scheduledSend.timerId = 0;
+  }
+
+  function resetScheduledSendRuntimeState(options?: { keepConfig?: boolean }) {
+    clearScheduledSendTimer();
+    state.scheduledSend.running = false;
+    state.scheduledSend.lastError = "";
+    state.scheduledSend.lastRunAt = 0;
+    state.scheduledSend.nextRunAt = 0;
+    state.scheduledSend.enabledAt = 0;
+    if (!options?.keepConfig) {
+      state.scheduledSend.config = null;
+    }
+    renderSystemInjectionWidget();
+  }
+
+  function buildDailyTime(date: Date, minutesOfDay: number) {
+    const next = new Date(date);
+    next.setHours(0, 0, 0, 0);
+    next.setMinutes(minutesOfDay, 0, 0);
+    return next;
+  }
+
+  function resolveScheduledSendWindowState(config: NonNullable<typeof state.scheduledSend.config>) {
+    const startMinutes = parseScheduledSendTimeToMinutes(config.startTime);
+    const endMinutes = parseScheduledSendTimeToMinutes(config.endTime);
+    if (startMinutes == null || endMinutes == null) {
+      return null;
+    }
+
+    const now = new Date();
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    const allDay = startMinutes === endMinutes;
+    const crossesMidnight = !allDay && startMinutes > endMinutes;
+    const withinWindow = allDay
+      ? true
+      : crossesMidnight
+        ? nowMinutes >= startMinutes || nowMinutes < endMinutes
+        : nowMinutes >= startMinutes && nowMinutes < endMinutes;
+
+    let currentWindowStartAt = buildDailyTime(now, startMinutes).getTime();
+    let currentWindowEndAt = buildDailyTime(now, endMinutes).getTime();
+    let nextWindowStartAt = currentWindowStartAt;
+
+    if (allDay) {
+      currentWindowStartAt = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).getTime();
+      currentWindowEndAt = currentWindowStartAt + 24 * 60 * 60 * 1000;
+      nextWindowStartAt = currentWindowStartAt + 24 * 60 * 60 * 1000;
+    } else if (crossesMidnight) {
+      if (nowMinutes >= startMinutes) {
+        currentWindowEndAt += 24 * 60 * 60 * 1000;
+        nextWindowStartAt = currentWindowStartAt + 24 * 60 * 60 * 1000;
+      } else if (nowMinutes < endMinutes) {
+        currentWindowStartAt -= 24 * 60 * 60 * 1000;
+        nextWindowStartAt = buildDailyTime(now, startMinutes).getTime();
+      } else {
+        nextWindowStartAt = buildDailyTime(now, startMinutes).getTime();
+      }
+    } else {
+      nextWindowStartAt =
+        nowMinutes < startMinutes
+          ? buildDailyTime(now, startMinutes).getTime()
+          : buildDailyTime(
+              new Date(now.getTime() + 24 * 60 * 60 * 1000),
+              startMinutes,
+            ).getTime();
+    }
+
+    return {
+      withinWindow,
+      currentWindowStartAt,
+      currentWindowEndAt,
+      nextWindowStartAt,
+    };
+  }
+
+  function scheduleNextScheduledSend(delayMs: number) {
+    clearScheduledSendTimer();
+    const boundedDelayMs = Math.max(250, Math.min(delayMs, 24 * 60 * 60 * 1000));
+    state.scheduledSend.nextRunAt = Date.now() + boundedDelayMs;
+    renderSystemInjectionWidget();
+    state.scheduledSend.timerId = window.setTimeout(() => {
+      state.scheduledSend.timerId = 0;
+      state.scheduledSend.nextRunAt = 0;
+      void runScheduledSendCycle();
+    }, boundedDelayMs);
+  }
+
+  async function runScheduledSendCycle() {
+    const config = state.scheduledSend.config;
+    if (!config || !config.enabled) {
+      resetScheduledSendRuntimeState({ keepConfig: true });
+      return;
+    }
+    if (!isPluginRuntimeEnabled() || !String(state.adapterScript || "").trim()) {
+      scheduleNextScheduledSend(5_000);
+      return;
+    }
+    if (state.codeMode.running || state.codeMode.autoContinueInFlight || state.scheduledSend.running) {
+      scheduleNextScheduledSend(3_000);
+      return;
+    }
+
+    const windowState = resolveScheduledSendWindowState(config);
+    if (!windowState) {
+      scheduleNextScheduledSend(60_000);
+      return;
+    }
+
+    if (!windowState.withinWindow) {
+      scheduleNextScheduledSend(Math.max(1_000, windowState.nextWindowStartAt - Date.now()));
+      return;
+    }
+
+    const intervalMs = Math.max(1_000, Number(config.intervalSeconds || 1) * 1_000);
+    const anchorAt = Math.max(
+      Number(state.scheduledSend.enabledAt || 0),
+      Number(windowState.currentWindowStartAt || 0),
+    );
+    const lastRunAt = Number(state.scheduledSend.lastRunAt || 0);
+    const nextDueAt = Math.max(anchorAt, lastRunAt) + intervalMs;
+    const now = Date.now();
+
+    if (now < nextDueAt) {
+      scheduleNextScheduledSend(nextDueAt - now);
+      return;
+    }
+    if (windowState.currentWindowEndAt <= now) {
+      scheduleNextScheduledSend(Math.max(1_000, windowState.nextWindowStartAt - now));
+      return;
+    }
+
+    state.scheduledSend.running = true;
+    state.scheduledSend.lastError = "";
+    // Scheduled send reuses the low-level send path only.
+    // It must never mutate the user's tool-result auto-continue preference.
+    const previousAutoContinueEnabled = state.codeMode.autoContinueEnabled;
+    const previousAutoContinueDelaySeconds = state.codeMode.autoContinueDelaySeconds;
+    renderSystemInjectionWidget();
+    try {
+      const result = await continuationController.sendStandalonePrompt(config.content, {
+        allowFillFallback: false,
+      });
+      if (result.ok) {
+        state.scheduledSend.lastRunAt = Date.now();
+        renderSystemInjectionWidget();
+        scheduleNextScheduledSend(intervalMs);
+      } else {
+        state.scheduledSend.lastError = String(result.error || "定时发送失败");
+        renderSystemInjectionWidget();
+        scheduleNextScheduledSend(
+          Math.min(
+            intervalMs,
+            Math.max(
+              SCHEDULED_SEND_MIN_RETRY_DELAY_MS,
+              Math.min(SCHEDULED_SEND_MAX_RETRY_DELAY_MS, intervalMs),
+            ),
+          ),
+        );
+      }
+    } catch (error) {
+      state.scheduledSend.lastError = stringifyError(error);
+      renderSystemInjectionWidget();
+      scheduleNextScheduledSend(
+        Math.min(
+          intervalMs,
+          Math.max(
+            SCHEDULED_SEND_MIN_RETRY_DELAY_MS,
+            Math.min(SCHEDULED_SEND_MAX_RETRY_DELAY_MS, intervalMs),
+          ),
+        ),
+      );
+    } finally {
+      if (state.codeMode.autoContinueEnabled !== previousAutoContinueEnabled) {
+        state.codeMode.autoContinueEnabled = previousAutoContinueEnabled;
+      }
+      if (state.codeMode.autoContinueDelaySeconds !== previousAutoContinueDelaySeconds) {
+        state.codeMode.autoContinueDelaySeconds = previousAutoContinueDelaySeconds;
+      }
+      state.scheduledSend.running = false;
+      renderSystemInjectionWidget();
+    }
+  }
+
+  function syncScheduledSendRuntime(configValue?: unknown) {
+    const nextConfig = normalizeScheduledSendConfig(configValue);
+    if (
+      !nextConfig ||
+      !isScheduledSendConfigEnabled(nextConfig) ||
+      !normalizeScheduledSendTime(nextConfig.startTime, "")
+    ) {
+      resetScheduledSendRuntimeState();
+      return;
+    }
+
+    const previousSignature = JSON.stringify(state.scheduledSend.config || null);
+    const nextSignature = JSON.stringify(nextConfig);
+    state.scheduledSend.config = nextConfig;
+    state.scheduledSend.lastError = "";
+    if (previousSignature !== nextSignature) {
+      state.scheduledSend.enabledAt = Date.now();
+      state.scheduledSend.lastRunAt = 0;
+      state.scheduledSend.nextRunAt = 0;
+    } else if (!state.scheduledSend.enabledAt) {
+      state.scheduledSend.enabledAt = Date.now();
+    }
+    scheduleNextScheduledSend(400);
+  }
+
+  async function setScheduledSendEnabledFromWidget(enabled: boolean) {
+    const currentConfig = state.scheduledSend.config;
+    if (!currentConfig) {
+      return { ok: false as const, error: "当前页面还没有定时发送配置" };
+    }
+    if (enabled && !normalizeScheduledSendContent(currentConfig.content)) {
+      return { ok: false as const, error: "发送内容为空，不能启用定时发送" };
+    }
+
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: "SCHEDULED_SEND_SET_ENABLED",
+        enabled,
+      });
+      if (response?.success === false) {
+        return {
+          ok: false as const,
+          error: String(response?.error || "切换定时发送失败"),
+        };
+      }
+      await resolveMonitorConfigFromRuntime();
+      return { ok: true as const };
+    } catch (error) {
+      return {
+        ok: false as const,
+        error: stringifyError(error),
+      };
+    }
+  }
+
   function clearPluginRuntimeEffects() {
+    resetScheduledSendRuntimeState({ keepConfig: true });
     const activeRunId = Number(state.codeMode.activeRunId || 0);
     if (activeRunId) {
       state.codeMode.cancelledRunIds.add(activeRunId);
@@ -338,6 +592,7 @@ import {
     setSystemInjectionArmed: systemInjectionTrackingController.setSystemInjectionArmed,
     getSystemInjectionStatusText: systemInjectionTrackingController.getSystemInjectionStatusText,
     syncRequestInjectionToMonitor,
+    setScheduledSendEnabled: setScheduledSendEnabledFromWidget,
     sendContextCompressionRequest,
   });
 
@@ -383,12 +638,14 @@ import {
     codeModeManifest,
     protocol,
     tabPluginEnabled,
+    scheduledSendConfig,
   }: {
     content?: string;
     adapterScript?: string;
     codeModeManifest?: Record<string, unknown>;
     protocol?: Record<string, unknown>;
     tabPluginEnabled?: boolean;
+    scheduledSendConfig?: Record<string, unknown> | null;
   }) {
     const previousRuntimeEnabled = isPluginRuntimeEnabled();
     const nextContent = String(content || "").trim();
@@ -423,6 +680,7 @@ import {
       clearPluginRuntimeEffects();
     }
     syncRequestInjectionToMonitor();
+    syncScheduledSendRuntime(tabPluginEnabled !== false ? scheduledSendConfig : null);
   }
 
   function createExecutionKey(code: string) {
@@ -976,6 +1234,7 @@ import {
             : { servers: [], docs: [] },
         protocol: response?.protocol,
         tabPluginEnabled: response?.tabPluginEnabled !== false,
+        scheduledSendConfig: response?.scheduledSendConfig || null,
       });
     } catch {
       applySystemInstructionSource({
@@ -984,6 +1243,7 @@ import {
         codeModeManifest: { servers: [], docs: [] },
         protocol: CHAT_PLUS_PROTOCOL,
         tabPluginEnabled: state.isTabEnabled,
+        scheduledSendConfig: null,
       });
     }
 
@@ -1150,12 +1410,14 @@ import {
         (changes[SITE_CONFIG_MAP_STORAGE_KEY] ||
           changes[SYSTEM_INSTRUCTION_PRESETS_STORAGE_KEY] ||
           changes[SYSTEM_INSTRUCTION_SITE_SELECTION_STORAGE_KEY] ||
+          changes[SCHEDULED_SEND_TAB_CONFIG_STORAGE_KEY] ||
           changes[MCP_CONFIG_STORAGE_KEY] ||
           changes[MCP_DISCOVERED_TOOLS_STORAGE_KEY] ||
           changes[MCP_ENABLED_TOOLS_STORAGE_KEY] ||
           changes[MCP_SITE_ENABLED_TOOLS_STORAGE_KEY])) ||
       (namespace === "session" &&
         (changes[SYSTEM_INSTRUCTION_TAB_SELECTION_STORAGE_KEY] ||
+          changes[SCHEDULED_SEND_TAB_CONFIG_STORAGE_KEY] ||
           changes[MCP_TAB_ENABLED_TOOLS_STORAGE_KEY]))
     ) {
       void resolveMonitorConfigFromRuntime();
@@ -1186,6 +1448,7 @@ import {
         adapterScript: message?.adapterScript || state.adapterScript || "",
         protocol: message?.protocol,
         tabPluginEnabled: message?.tabPluginEnabled !== false,
+        scheduledSendConfig: message?.scheduledSendConfig || null,
       });
       dispatchMonitorControl(state.monitorActive);
       sendResponse({ success: true });

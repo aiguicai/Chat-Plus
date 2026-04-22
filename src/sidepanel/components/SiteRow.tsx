@@ -5,6 +5,7 @@ import {
   CancelIcon,
   ConfirmIcon,
   DeleteIcon,
+  EditIcon,
   ExportAllIcon,
 } from "./icons";
 
@@ -13,7 +14,9 @@ export const SiteRow = ({
   currentHost,
   config,
   pendingDelete,
+  canEdit,
   onOpen,
+  onEdit,
   onExport,
   onArmDelete,
   onConfirmDelete,
@@ -23,7 +26,9 @@ export const SiteRow = ({
   currentHost: string;
   config: SiteConfig;
   pendingDelete: boolean;
+  canEdit?: boolean;
   onOpen?: () => void;
+  onEdit?: () => void;
   onExport?: () => void;
   onArmDelete?: () => void;
   onConfirmDelete?: () => void;
@@ -32,7 +37,7 @@ export const SiteRow = ({
   const meta = siteMeta(host, currentHost, config);
   const isCurrent = host === currentHost;
   const canExport = hasValidConfigData(config);
-  const showActions = pendingDelete || canExport;
+  const showActions = pendingDelete || canEdit || canExport;
   const clickable = !pendingDelete && Boolean(onOpen);
 
   return (
@@ -87,26 +92,42 @@ export const SiteRow = ({
                 </>
               ) : (
                 <>
-                  <ToolbarIconButton
-                    label={`导出 ${host}`}
-                    className="cp-toolbar-icon-sm"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onExport?.();
-                    }}
-                  >
-                    <ExportAllIcon />
-                  </ToolbarIconButton>
-                  <ToolbarIconButton
-                    label={`删除 ${host}`}
-                    className="cp-toolbar-icon-sm"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onArmDelete?.();
-                    }}
-                  >
-                    <DeleteIcon />
-                  </ToolbarIconButton>
+                  {canEdit ? (
+                    <ToolbarIconButton
+                      label={`编辑 ${host}`}
+                      className="cp-toolbar-icon-sm"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onEdit?.();
+                      }}
+                    >
+                      <EditIcon />
+                    </ToolbarIconButton>
+                  ) : null}
+                  {canExport ? (
+                    <ToolbarIconButton
+                      label={`导出 ${host}`}
+                      className="cp-toolbar-icon-sm"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onExport?.();
+                      }}
+                    >
+                      <ExportAllIcon />
+                    </ToolbarIconButton>
+                  ) : null}
+                  {canExport ? (
+                    <ToolbarIconButton
+                      label={`删除 ${host}`}
+                      className="cp-toolbar-icon-sm"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onArmDelete?.();
+                      }}
+                    >
+                      <DeleteIcon />
+                    </ToolbarIconButton>
+                  ) : null}
                 </>
               )}
             </div>

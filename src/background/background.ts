@@ -21,6 +21,12 @@ import {
   sanitizeSystemInstructionPresetIdBySiteKey,
   sanitizeSystemInstructionPresetIdByTabId,
 } from "../system-instructions/shared";
+import {
+  DEFAULT_SCHEDULED_SEND_TAB_CONFIG_STATE,
+  SCHEDULED_SEND_TAB_CONFIG_STORAGE_KEY,
+  normalizeScheduledSendContent,
+  normalizeScheduledSendTabConfigMap,
+} from "../scheduled-send/shared";
 import { filterConfigToEnabledTools, normalizeSiteToolScopeKey } from "../mcp/shared";
 import { buildCodeModeSystemInstruction } from "../mcp/code-mode";
 import { CHAT_PLUS_PROTOCOL } from "../shared/chatplus-protocol";
@@ -178,7 +184,7 @@ async function resolveSystemInstructionContext(sender) {
     }),
     new Promise<Record<string, unknown>>((resolve) => {
       chrome.storage.session.get(
-        [SYSTEM_INSTRUCTION_TAB_SELECTION_STORAGE_KEY],
+        [SYSTEM_INSTRUCTION_TAB_SELECTION_STORAGE_KEY, SCHEDULED_SEND_TAB_CONFIG_STORAGE_KEY],
         (result) => resolve(result as Record<string, unknown>),
       );
     }),
@@ -196,6 +202,11 @@ async function resolveSystemInstructionContext(sender) {
     presetStore.presets,
     ((localState[SYSTEM_INSTRUCTION_SITE_SELECTION_STORAGE_KEY] || DEFAULT_SYSTEM_INSTRUCTION_SITE_SELECTION_STATE) as Record<string, unknown>).presetIdBySiteKey,
     siteKey ? [siteKey] : undefined,
+  );
+  const scheduledSendConfigByTabId = normalizeScheduledSendTabConfigMap(
+    ((sessionState[SCHEDULED_SEND_TAB_CONFIG_STORAGE_KEY] ||
+      DEFAULT_SCHEDULED_SEND_TAB_CONFIG_STATE) as Record<string, unknown>).configByTabId,
+    typeof tabId === "number" ? [tabId] : undefined,
   );
   const resolvedPreset = resolveSystemInstructionPreset({
     presets: presetStore.presets,
@@ -228,6 +239,10 @@ async function resolveSystemInstructionContext(sender) {
     adapterScript: tabPluginEnabled ? adapterScript : "",
     protocol: CHAT_PLUS_PROTOCOL,
     codeModeManifest: tabPluginEnabled ? codeMode.manifest : { servers: [], docs: [] },
+    scheduledSendConfig:
+      tabPluginEnabled && typeof tabId === "number"
+        ? scheduledSendConfigByTabId[String(tabId)] || null
+        : null,
   };
 }
 
@@ -288,6 +303,56 @@ async function handleRuntimeMessage(message, sender) {
 
   if (message.type === "SYSTEM_INSTRUCTION_RESOLVE") {
     return resolveSystemInstructionContext(sender);
+  }
+
+  if (message.type === "SCHEDULED_SEND_SET_ENABLED") {
+    const tabId = Number(sender?.tab?.id || 0);
+    if (!tabId) {
+      return { success: false, error: "缺少标签页上下文" };
+    }
+
+    const enabled = message?.enabled === true;
+    const storedState = await new Promise<Record<string, unknown>>((resolve) => {
+      chrome.storage.session.get([SCHEDULED_SEND_TAB_CONFIG_STORAGE_KEY], (result) =>
+        resolve(result as Record<string, unknown>),
+      );
+    });
+    const allConfigByTabId = normalizeScheduledSendTabConfigMap(
+      ((storedState[SCHEDULED_SEND_TAB_CONFIG_STORAGE_KEY] ||
+        DEFAULT_SCHEDULED_SEND_TAB_CONFIG_STATE) as Record<string, unknown>).configByTabId,
+    );
+    const currentConfig = allConfigByTabId[String(tabId)] || null;
+    if (!currentConfig) {
+      return { success: false, error: "当前页面还没有定时发送配置" };
+    }
+    if (enabled && !normalizeScheduledSendContent(currentConfig.content)) {
+      return { success: false, error: "发送内容为空，不能启用定时发送" };
+    }
+
+    const nextConfigByTabId = {
+      ...allConfigByTabId,
+      [String(tabId)]: {
+        ...currentConfig,
+        enabled,
+        updatedAt: Date.now(),
+      },
+    };
+
+    await new Promise<void>((resolve) => {
+      chrome.storage.session.set(
+        {
+          [SCHEDULED_SEND_TAB_CONFIG_STORAGE_KEY]: {
+            configByTabId: nextConfigByTabId,
+          },
+        },
+        () => resolve(),
+      );
+    });
+
+    return {
+      success: true,
+      config: nextConfigByTabId[String(tabId)],
+    };
   }
 
   return false;

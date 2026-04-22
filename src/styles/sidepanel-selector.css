@@ -387,106 +387,140 @@
   background: currentColor !important;
 }
 
-.cp-about-hero,
-.cp-about-feature,
-.cp-about-section {
-  position: relative !important;
-  overflow: hidden !important;
-}
-
-.cp-about-hero {
+.cp-about-doc {
   display: grid !important;
-  gap: 12px !important;
-  padding: 18px !important;
-  border-color: color-mix(in srgb, var(--cp-accent) 28%, var(--cp-border)) !important;
-  background:
-    radial-gradient(circle at top right, color-mix(in srgb, var(--cp-accent) 20%, transparent), transparent 38%),
-    linear-gradient(180deg, color-mix(in srgb, var(--cp-surface) 94%, transparent), var(--cp-surface)) !important;
+  gap: 20px !important;
+  width: 100% !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
-.cp-about-kicker {
-  color: var(--cp-accent-strong) !important;
-  font-size: 0.68rem !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.12em !important;
-  text-transform: uppercase !important;
+.cp-about-doc-header {
+  display: grid !important;
+  gap: 10px !important;
+  padding-bottom: 16px !important;
+  border-bottom: 1px solid var(--cp-border) !important;
 }
 
-.cp-about-name {
-  font-size: 1.2rem !important;
-  line-height: 1.1 !important;
+.cp-about-doc-title {
+  margin: 0 !important;
+  color: var(--cp-title) !important;
+  font-size: 1.32rem !important;
+  line-height: 1.15 !important;
+  font-weight: 800 !important;
 }
 
-.cp-about-badges,
-.cp-about-permissions {
+.cp-about-doc-lead,
+.cp-about-doc-section p,
+.cp-about-doc-list li {
+  margin: 0 !important;
+  max-width: 65ch !important;
+  color: var(--cp-text-soft) !important;
+  font-size: 0.83rem !important;
+  line-height: 1.78 !important;
+}
+
+.cp-about-doc-meta {
   display: flex !important;
+  align-items: center !important;
   flex-wrap: wrap !important;
-  gap: 8px !important;
+  gap: 6px !important;
+  margin: 12px 0 0 !important;
+  color: var(--cp-text-muted) !important;
+  font-size: 0.74rem !important;
 }
 
-.cp-about-badge,
-.cp-about-permission {
+.cp-about-doc-meta code,
+.cp-about-doc-section code {
+  padding: 1px 6px !important;
+  border: 1px solid var(--cp-border) !important;
+  background: color-mix(in srgb, var(--cp-surface-soft) 72%, transparent) !important;
+  color: var(--cp-title) !important;
+  font-size: 0.74rem !important;
+  font-weight: 700 !important;
+}
+
+.cp-about-doc-meta-sep {
+  color: var(--cp-text-muted) !important;
+}
+
+.cp-about-doc-section {
+  display: grid !important;
+  gap: 10px !important;
+}
+
+.cp-about-doc-section h2 {
+  margin: 0 !important;
+  padding-bottom: 8px !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--cp-border) 78%, transparent) !important;
+  color: var(--cp-title) !important;
+  font-size: 0.96rem !important;
+  line-height: 1.35 !important;
+  font-weight: 700 !important;
+}
+
+.cp-about-doc-list {
+  display: grid !important;
+  gap: 8px !important;
+  margin: 0 !important;
+  padding-left: 18px !important;
+}
+
+.cp-about-doc-contact-list {
+  display: grid !important;
+  gap: 10px !important;
+}
+
+.cp-about-doc-contact-item {
+  display: grid !important;
+  grid-template-columns: 18px minmax(0, 1fr) !important;
+  align-items: start !important;
+  gap: 10px !important;
+  color: var(--cp-text-soft) !important;
+  font-size: 0.83rem !important;
+  line-height: 1.78 !important;
+}
+
+.cp-about-doc-contact-content {
+  min-width: 0 !important;
+}
+
+.cp-about-doc-contact-label {
+  color: var(--cp-title) !important;
+  font-weight: 600 !important;
+}
+
+.cp-about-doc-contact-icon {
   display: inline-flex !important;
   align-items: center !important;
-  min-height: 28px !important;
-  padding: 0 10px !important;
-  border-radius: 999px !important;
-  border: 1px solid color-mix(in srgb, var(--cp-accent) 24%, var(--cp-border)) !important;
-  background: color-mix(in srgb, var(--cp-accent) 10%, var(--cp-surface)) !important;
+  justify-content: center !important;
+  width: 18px !important;
+  height: 18px !important;
+  margin-top: 2px !important;
+  color: var(--cp-accent-strong) !important;
+}
+
+.cp-about-doc-contact-item svg {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+.cp-about-doc-link {
+  color: var(--cp-accent-strong) !important;
+  text-decoration: underline !important;
+  text-decoration-color: color-mix(in srgb, var(--cp-accent) 54%, transparent) !important;
+  text-underline-offset: 3px !important;
+  word-break: break-all !important;
+}
+
+.cp-about-doc-link:hover {
   color: var(--cp-title) !important;
-  font-size: 0.7rem !important;
-  font-weight: 700 !important;
-  line-height: 1 !important;
 }
 
-.cp-about-grid {
-  display: grid !important;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-  gap: 12px !important;
-}
-
-.cp-about-feature {
-  display: grid !important;
-  gap: 8px !important;
-  min-height: 148px !important;
-  padding: 14px !important;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--cp-surface-soft) 92%, transparent),
-    color-mix(in srgb, var(--cp-surface) 88%, transparent)
-  ) !important;
-}
-
-.cp-about-feature-title,
-.cp-about-section-title {
-  color: var(--cp-title) !important;
-  font-size: 0.84rem !important;
-  font-weight: 700 !important;
-  line-height: 1.3 !important;
-}
-
-.cp-about-feature-desc,
-.cp-about-section-desc,
-.cp-about-list-item {
-  color: var(--cp-text-soft) !important;
-  font-size: 0.76rem !important;
-  line-height: 1.65 !important;
-}
-
-.cp-about-section {
-  display: grid !important;
-  gap: 10px !important;
-}
-
-.cp-about-list {
-  display: grid !important;
-  gap: 10px !important;
-}
-
-.cp-about-list-item {
-  padding: 10px 12px !important;
-  border: 1px solid var(--cp-border) !important;
-  border-radius: 13px !important;
-  background: color-mix(in srgb, var(--cp-surface-soft) 80%, transparent) !important;
+.cp-about-doc-link:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--cp-accent) 60%, transparent) !important;
+  outline-offset: 2px !important;
 }
 

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Chat Plus",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Open-source MCP orchestration side panel for AI chat websites.",
   "permissions": [
     "storage",

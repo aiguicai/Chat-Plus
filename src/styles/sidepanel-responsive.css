@@ -78,8 +78,10 @@
   }
 
   .cp-orch-row {
-    grid-template-columns: 38px minmax(0, 1fr) auto !important;
+    grid-template-columns: 34px minmax(0, 1fr) auto !important;
     align-items: center !important;
+    gap: 8px !important;
+    padding: 9px 10px !important;
   }
 
   .cp-orch-row-actions {
@@ -88,6 +90,30 @@
     justify-self: end !important;
     justify-content: flex-end !important;
     flex-wrap: nowrap !important;
+    gap: 4px !important;
+  }
+
+  .cp-orch-row-index {
+    width: 34px !important;
+    height: 34px !important;
+  }
+
+  .cp-orch-tools-trigger,
+  .cp-orch-system-trigger,
+  .cp-orch-schedule-trigger {
+    width: 30px !important;
+    min-width: 30px !important;
+    min-height: 30px !important;
+    flex-basis: 30px !important;
+  }
+
+  .cp-orch-row-toggle-wrap {
+    min-width: 38px !important;
+    min-height: 38px !important;
+  }
+
+  .cp-orch-schedule-grid {
+    grid-template-columns: 1fr !important;
   }
 
   .cp-orch-tools-panel-head,
@@ -122,9 +148,6 @@
     grid-template-columns: 20px minmax(0, 1fr) !important;
   }
 
-  .cp-about-grid {
-    grid-template-columns: 1fr !important;
-  }
 }
 
 @media (max-width: 360px) {
@@ -187,8 +210,8 @@
 
   .cp-orch-row {
     grid-template-columns: 34px minmax(0, 1fr) auto !important;
-    gap: 10px !important;
-    padding: 10px !important;
+    gap: 7px !important;
+    padding: 8px 9px !important;
   }
 
   .cp-orch-row-index {
@@ -199,7 +222,7 @@
 
   .cp-orch-row-actions {
     grid-column: auto !important;
-    gap: 6px !important;
+    gap: 3px !important;
   }
 
   .cp-orch-row-toggle {
@@ -209,10 +232,24 @@
   }
 
   .cp-orch-tools-trigger,
-  .cp-orch-system-trigger {
-    min-width: 32px !important;
-    width: 32px !important;
-    min-height: 32px !important;
+  .cp-orch-system-trigger,
+  .cp-orch-schedule-trigger {
+    min-width: 28px !important;
+    width: 28px !important;
+    min-height: 28px !important;
+    flex-basis: 28px !important;
+  }
+
+  .cp-orch-tools-trigger svg,
+  .cp-orch-system-trigger svg,
+  .cp-orch-schedule-trigger svg {
+    width: 13px !important;
+    height: 13px !important;
+  }
+
+  .cp-orch-row-toggle-wrap {
+    min-width: 34px !important;
+    min-height: 34px !important;
   }
 
   .cp-orch-tools-add-item-actions,

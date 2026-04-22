@@ -34,10 +34,10 @@
 .cp-orch-row {
   --cp-orch-color: var(--cp-accent);
   display: grid !important;
-  grid-template-columns: 38px minmax(0, 1fr) auto !important;
+  grid-template-columns: 36px minmax(0, 1fr) auto !important;
   align-items: center !important;
-  gap: 12px !important;
-  padding: 12px !important;
+  gap: 10px !important;
+  padding: 10px 11px !important;
   border: 1px solid var(--cp-border) !important;
   border-radius: 16px !important;
   background: var(--cp-surface-soft) !important;
@@ -74,8 +74,8 @@
 }
 
 .cp-orch-row-index {
-  width: 38px !important;
-  height: 38px !important;
+  width: 36px !important;
+  height: 36px !important;
   position: relative !important;
   display: inline-flex !important;
   align-items: center !important;
@@ -142,7 +142,7 @@
   display: flex !important;
   align-items: center !important;
   justify-content: flex-end !important;
-  gap: 6px !important;
+  gap: 4px !important;
   justify-self: end !important;
   flex-wrap: nowrap !important;
   flex: 0 0 auto !important;
@@ -183,7 +183,8 @@
 }
 
 .cp-orch-tools-trigger,
-.cp-orch-system-trigger {
+.cp-orch-system-trigger,
+.cp-orch-schedule-trigger {
   width: 32px !important;
   min-width: 32px !important;
   min-height: 32px !important;
@@ -206,14 +207,16 @@
 }
 
 .cp-orch-tools-trigger:hover,
-.cp-orch-system-trigger:hover {
+.cp-orch-system-trigger:hover,
+.cp-orch-schedule-trigger:hover {
   border-color: color-mix(in srgb, var(--cp-orch-color) 44%, var(--cp-border-strong)) !important;
   background: color-mix(in srgb, var(--cp-orch-color) 12%, var(--cp-surface)) !important;
   color: var(--cp-title) !important;
 }
 
 .cp-orch-tools-trigger:focus-visible,
-.cp-orch-system-trigger:focus-visible {
+.cp-orch-system-trigger:focus-visible,
+.cp-orch-schedule-trigger:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--cp-accent) 36%, transparent) !important;
   outline-offset: 2px !important;
 }
@@ -221,11 +224,18 @@
 .cp-orch-tools-trigger.is-active,
 .cp-orch-tools-trigger.is-open,
 .cp-orch-system-trigger.is-active,
-.cp-orch-system-trigger.is-open {
+.cp-orch-system-trigger.is-open,
+.cp-orch-schedule-trigger.is-active,
+.cp-orch-schedule-trigger.is-open {
   border-color: color-mix(in srgb, var(--cp-orch-color) 50%, var(--cp-border-strong)) !important;
   background: color-mix(in srgb, var(--cp-orch-color) 16%, var(--cp-surface)) !important;
   color: color-mix(in srgb, var(--cp-orch-color) 70%, var(--cp-title)) !important;
   box-shadow: 0 10px 18px rgba(15, 23, 42, 0.08) !important;
+}
+
+.cp-orch-schedule-trigger.is-enabled {
+  border-color: color-mix(in srgb, var(--cp-success) 36%, var(--cp-border-strong)) !important;
+  color: color-mix(in srgb, var(--cp-success) 68%, var(--cp-title)) !important;
 }
 
 .cp-orch-tools-trigger-label {
@@ -246,13 +256,15 @@
 }
 
 .cp-orch-tools-trigger svg,
-.cp-orch-system-trigger svg {
+.cp-orch-system-trigger svg,
+.cp-orch-schedule-trigger svg {
   width: 14px !important;
   height: 14px !important;
 }
 
 .cp-orch-tools-trigger-dot,
-.cp-orch-system-trigger-dot {
+.cp-orch-system-trigger-dot,
+.cp-orch-schedule-trigger-dot {
   position: absolute !important;
   top: 5px !important;
   right: 5px !important;
@@ -869,6 +881,48 @@
   justify-content: flex-end !important;
   gap: 8px !important;
   flex-wrap: wrap !important;
+}
+
+.cp-orch-schedule-dialog {
+  width: min(520px, calc(100vw - 32px)) !important;
+  max-height: min(80vh, 680px) !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  padding-right: 10px !important;
+}
+
+.cp-orch-schedule-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+
+.cp-orch-schedule-toggle-row {
+  min-height: 42px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  padding: 0 12px !important;
+  border: 1px solid var(--cp-border) !important;
+  border-radius: 12px !important;
+  background: color-mix(in srgb, var(--cp-surface-soft) 80%, var(--cp-surface)) !important;
+}
+
+.cp-orch-schedule-toggle-copy {
+  color: var(--cp-text-soft) !important;
+  font-size: 0.74rem !important;
+  line-height: 1.35 !important;
+}
+
+.cp-orch-schedule-textarea {
+  min-height: 190px !important;
+  max-height: min(34vh, 280px) !important;
+  overflow: auto !important;
+}
+
+.cp-orch-schedule-actions {
+  justify-content: space-between !important;
 }
 
 .cp-orch-tools-add-item,

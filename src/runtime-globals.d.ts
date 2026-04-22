@@ -4,10 +4,12 @@ type ChatPlusRuntimeMessage =
   | { type: "GET_TAB_FRAMES"; tabId: number }
   | { type: "SYSTEM_INSTRUCTION_RESOLVE" }
   | { type: "SYSTEM_INSTRUCTION_REFRESH" }
+  | { type: "SCHEDULED_SEND_SET_ENABLED"; enabled: boolean }
   | {
       type: "SYSTEM_INSTRUCTION_APPLY";
       content?: string;
       protocol?: Record<string, unknown>;
+      scheduledSendConfig?: Record<string, unknown> | null;
     }
   | { type: "GET_PAGE_CONTEXT" }
   | { type: "CHATPLUS_CONTENT_READY"; context: ChatPlusPageContext }

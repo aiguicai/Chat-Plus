@@ -1,7 +1,9 @@
 import { LibraryStat } from "../components/common";
-import { PromptIcon, WrenchIcon } from "../components/icons";
+import { ClockIcon, PromptIcon, WrenchIcon } from "../components/icons";
 import type { OrchestrationTab } from "../types";
+import { OrchestrationScheduledSendDialog } from "./orchestration/OrchestrationScheduledSendDialog";
 import { OrchestrationSystemDialog } from "./orchestration/OrchestrationSystemDialog";
+import { useOrchestrationScheduledSend } from "./orchestration/useOrchestrationScheduledSend";
 import { OrchestrationToolsPanel } from "./orchestration/OrchestrationToolsPanel";
 import { useOrchestrationSystemInstructions } from "./orchestration/useOrchestrationSystemInstructions";
 import { useOrchestrationTools } from "./orchestration/useOrchestrationTools";
@@ -22,6 +24,7 @@ export function OrchestrationPane({
   const safeTabs = Array.isArray(tabs) ? tabs : [];
   const tools = useOrchestrationTools({ active, tabs: safeTabs });
   const systemInstructions = useOrchestrationSystemInstructions({ active, tabs: safeTabs });
+  const scheduledSend = useOrchestrationScheduledSend({ active, tabs: safeTabs });
 
   const handleSelectOrchestrationTab = (tab: OrchestrationTab) => {
     void systemInstructions.syncResolvedSystemInstructionToTab(tab);
@@ -30,7 +33,14 @@ export function OrchestrationPane({
 
   const handleOpenSystemDialog = (tab: OrchestrationTab) => {
     tools.closeAddServerPanel();
+    scheduledSend.closeScheduleDialog();
     systemInstructions.openSystemDialog(tab);
+  };
+
+  const handleOpenScheduleDialog = (tab: OrchestrationTab) => {
+    tools.closeAddServerPanel();
+    systemInstructions.closeSystemDialog();
+    scheduledSend.openScheduleDialog(tab);
   };
 
   return (
@@ -46,6 +56,7 @@ export function OrchestrationPane({
               {safeTabs.map((tab) => {
                 const toolView = tools.getTabToolView(tab);
                 const systemView = systemInstructions.resolveSystemForTab(tab);
+                const scheduleView = scheduledSend.resolveScheduledSendForTab(tab);
                 const selectedSystemPreset = systemView.selectedSystemPreset;
                 const desiredEnabled = Boolean(tab.desiredEnabled);
                 const statusText = desiredEnabled
@@ -127,6 +138,25 @@ export function OrchestrationPane({
                           <PromptIcon />
                           {systemView.hasSystemInstruction ? (
                             <span className="cp-orch-system-trigger-dot" aria-hidden="true"></span>
+                          ) : null}
+                        </button>
+                        <button
+                          type="button"
+                          className={`cp-orch-schedule-trigger${scheduleView.isScheduledSendEnabled ? " is-active" : ""}${scheduleView.isScheduleOpen ? " is-open" : ""}${scheduleView.isScheduledSendEnabled ? " is-enabled" : ""}`}
+                          aria-expanded={scheduleView.isScheduleOpen}
+                          aria-haspopup="dialog"
+                          aria-label={
+                            scheduleView.isScheduledSendEnabled
+                              ? `${tab.host} 定时发送已启用，${scheduleView.summary}`
+                              : scheduleView.hasScheduledSend
+                                ? `${tab.host} 已保存定时发送配置，当前未启用`
+                                : `${tab.host} 配置定时发送`
+                          }
+                          onClick={() => handleOpenScheduleDialog(tab)}
+                        >
+                          <ClockIcon />
+                          {scheduleView.isScheduledSendEnabled ? (
+                            <span className="cp-orch-schedule-trigger-dot" aria-hidden="true"></span>
                           ) : null}
                         </button>
                         <button
@@ -218,6 +248,21 @@ export function OrchestrationPane({
           onSetPendingDeletePresetId={systemInstructions.setPendingDeletePresetId}
           onSetPresetNameDraft={systemInstructions.setPresetNameDraft}
           onSetPresetContentDraft={systemInstructions.setPresetContentDraft}
+        />
+        <OrchestrationScheduledSendDialog
+          openScheduleTab={scheduledSend.openScheduleTab}
+          scheduleEnabledDraft={scheduledSend.scheduleEnabledDraft}
+          scheduleStartTimeDraft={scheduledSend.scheduleStartTimeDraft}
+          scheduleEndTimeDraft={scheduledSend.scheduleEndTimeDraft}
+          scheduleIntervalDraft={scheduledSend.scheduleIntervalDraft}
+          scheduleContentDraft={scheduledSend.scheduleContentDraft}
+          scheduleError={scheduledSend.scheduleError}
+          onClose={scheduledSend.closeScheduleDialog}
+          onSetScheduleEnabledDraft={scheduledSend.setScheduleEnabledDraft}
+          onSetScheduleStartTimeDraft={scheduledSend.setScheduleStartTimeDraft}
+          onSetScheduleEndTimeDraft={scheduledSend.setScheduleEndTimeDraft}
+          onSetScheduleIntervalDraft={scheduledSend.setScheduleIntervalDraft}
+          onSetScheduleContentDraft={scheduledSend.setScheduleContentDraft}
         />
       </div>
     </div>

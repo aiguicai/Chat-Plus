@@ -15,6 +15,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -31,9 +33,12 @@ jobs:
       - name: Build Chrome release package
         run: npm run release:build:chrome
 
+      - name: Generate release notes
+        run: node scripts/generate-release-notes.mjs "${GITHUB_REF_NAME}" > release/release-notes.md
+
       - name: Upload GitHub release assets
         uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
+          body_path: release/release-notes.md
           files: |
             release/*-chrome.zip
