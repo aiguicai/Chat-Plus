@@ -353,32 +353,15 @@ return {
     adapterName: "DeepSeek",
     adapterVersion: "2026.04",
     capabilities: {
-      requestInjection: "json-body",
+      requestInjection: "dom-plan",
       responseExtraction: "sse",
       protocolCards: "helper",
       autoContinuation: "dom-plan",
     },
   },
 
-  transformRequest(ctx) {
-    const bodyText = ctx.helpers.text.toText(ctx.bodyText);
-    if (!ctx.injectionText || !looksLikeDeepSeekCompletionRequest(ctx.url, bodyText)) return null;
-
-    const payload = ctx.helpers.json.parse(bodyText);
-    if (!payload || typeof payload.prompt !== "string") return null;
-
-    const original = payload.prompt;
-    const nextText = ctx.helpers.buildInjectedText(ctx.injectionText, original, ctx.injectionMode);
-    if (nextText === original) return null;
-
-    payload.prompt = nextText;
-
-    return {
-      applied: true,
-      bodyText: JSON.stringify(payload),
-      requestMessagePath: "body-json:prompt",
-      requestMessagePreview: original,
-    };
+  transformRequest() {
+    return null;
   },
 
   extractResponse(ctx) {
@@ -450,6 +433,40 @@ return {
       'textarea[name="search"]',
       'textarea[placeholder="给 DeepSeek 发送消息 "]',
     ];
+    const sendButtonSelectors = [
+      '.ds-icon-button[role="button"][aria-disabled="false"]:has(path[d^="M8.3125"])',
+      '[role="button"][aria-disabled="false"]:has(svg[viewBox="0 0 16 16"] path[d^="M8.3125"])',
+      '.ds-icon-button[role="button"][aria-disabled="false"]',
+      '.ds-icon-button[role="button"]:not([aria-disabled="true"])',
+      'button.ds-floating-button.ds-floating-button--icon.ds-floating-button--lg[role="button"]',
+      '[role="button"][aria-label="发送"]',
+      '[role="button"][aria-label="Send"]',
+      '[role="button"][aria-label*="发送"]',
+      '[role="button"][aria-label*="send" i]',
+      'button[aria-label*="发送"]',
+      'button[aria-label*="send" i]',
+    ];
+
+    const clickPlan = ctx.helpers.plans.dom({
+      root: ctx.root,
+      composerText: ctx.continuationText,
+      input: {
+        selectors: inputSelectors,
+        kind: "textarea",
+        dispatchEvents: ["input", "change"],
+      },
+      send: {
+        mode: "click",
+        selectors: sendButtonSelectors,
+        waitForEnabled: true,
+        maxWaitMs: 3000,
+        beforeSendDelayMs: 220,
+        successWaitMs: 1500,
+        replayClickAfterManualInjection: true,
+        replayClickDelayMs: 180,
+      },
+    });
+    if (clickPlan) return clickPlan;
 
     return ctx.helpers.plans.dom({
       root: ctx.root,

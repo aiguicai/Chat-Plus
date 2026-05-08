@@ -58,6 +58,28 @@ test("inferToolResultTone marks failure on known failure markers", () => {
   assert.equal(inferToolResultTone("执行完成"), "success");
 });
 
+test("inferToolResultTone uses nested isError before keyword fallback", () => {
+  assert.equal(
+    inferToolResultTone([
+      "Chat Plus Code Mode 执行成功",
+      "阶段: runtime",
+      "返回结果:",
+      JSON.stringify({ content: [{ text: "错误: 这是工具正常返回的文本", isError: false }] }, null, 2),
+    ].join("\n")),
+    "success",
+  );
+
+  assert.equal(
+    inferToolResultTone({
+      content: [
+        { text: "first item", isError: false },
+        { nested: { isError: true } },
+      ],
+    }),
+    "error",
+  );
+});
+
 test("hasIncompleteProtocolBlock detects missing end token", () => {
   const text = `hello\n${protocol.codeMode.begin}\nconst x = 1;`;
   assert.equal(hasIncompleteProtocolBlock(text, protocol), true);

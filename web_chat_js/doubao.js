@@ -1,114 +1,12 @@
-const toText = (value) => String(value ?? "").trim();
-
-function joinTextSegmentsWithBreaks(segments) {
-  const parts = Array.isArray(segments)
-    ? segments
-        .map((segment) => String(segment ?? "").replace(/\r\n?/g, "\n"))
-        .filter(Boolean)
-    : [];
-  if (!parts.length) return "";
-
-  let text = "";
-  for (const part of parts) {
-    if (!text) {
-      text = part;
-      continue;
-    }
-    if (text.endsWith("\n") || part.startsWith("\n")) {
-      text += part;
-      continue;
-    }
-    text += `\n${part}`;
-  }
-
-  return text;
-}
-
-function preferLongerText(current, candidate) {
-  const left = String(current ?? "");
-  const right = String(candidate ?? "");
-  if (!left) return right;
-  if (!right) return left;
-  if (right.length !== left.length) return right.length > left.length ? right : left;
-
-  const leftProtocolCount = (left.match(/\[CHAT_PLUS_/g) || []).length;
-  const rightProtocolCount = (right.match(/\[CHAT_PLUS_/g) || []).length;
-  if (rightProtocolCount !== leftProtocolCount) {
-    return rightProtocolCount > leftProtocolCount ? right : left;
-  }
-
-  const leftNewlineCount = (left.match(/\n/g) || []).length;
-  const rightNewlineCount = (right.match(/\n/g) || []).length;
-  return rightNewlineCount > leftNewlineCount ? right : left;
-}
-
-function mergeStreamingText(current, incoming) {
-  const base = String(current ?? "");
-  const next = String(incoming ?? "");
-  if (!next) return base;
-  if (!base) return next;
-  if (base.endsWith(next)) return base;
-  if (next.startsWith(base)) return next;
-
-  const maxOverlap = Math.min(base.length, next.length);
-  for (let size = maxOverlap; size > 0; size -= 1) {
-    if (base.slice(-size) === next.slice(0, size)) {
-      return base + next.slice(size);
-    }
-  }
-
-  return base + next;
-}
-
-function readNotifyBlocksText(data) {
-  const blocks = data?.content?.content_block;
-  if (!Array.isArray(blocks)) return "";
-
-  const texts = [];
-  for (const block of blocks) {
-    if (block?.block_type === 10000 && typeof block?.content?.text_block?.text === "string") {
-      texts.push(block.content.text_block.text);
-    }
-  }
-
-  return joinTextSegmentsWithBreaks(texts);
-}
-
-function readStreamChunkTexts(data) {
-  const patchOps = Array.isArray(data?.patch_op) ? data.patch_op : [];
-  const texts = [];
-
-  for (const op of patchOps) {
-    const patchValue = op?.patch_value;
-    const blockTexts = [];
-    const blocks = patchValue?.content_block;
-    if (Array.isArray(blocks)) {
-      for (const block of blocks) {
-        if (block?.block_type === 10000 && typeof block?.content?.text_block?.text === "string") {
-          blockTexts.push(block.content.text_block.text);
-        }
-      }
-    }
-
-    const blockText = joinTextSegmentsWithBreaks(blockTexts);
-    if (blockText) {
-      texts.push(blockText);
-      continue;
-    }
-
-    if (typeof patchValue?.tts_content === "string") {
-      texts.push(patchValue.tts_content);
-    }
-  }
-
-  return texts;
-}
+// Doubao v3 — rewritten 2026-05-08 against live CDP capture
+// SSE endpoint: POST https://www.doubao.com/chat/completion (text/event-stream)
+// DOM refreshed: data-testid selectors removed; replaced with semantic CSS class selectors
 
 return {
   meta: {
     contractVersion: 2,
     adapterName: "Doubao",
-    adapterVersion: "2026.04",
+    adapterVersion: "2026.05",
     capabilities: {
       requestInjection: "json-body",
       responseExtraction: "sse",
@@ -117,6 +15,8 @@ return {
     },
   },
 
+  // ── transformRequest ────────────────────────────────────────────────
+  // JSON request body to /chat/completion, block_type 10000 unchanged.
   transformRequest(ctx) {
     const bodyText = ctx.helpers.text.toText(ctx.bodyText);
     if (!ctx.injectionText || !bodyText) return null;
@@ -126,12 +26,9 @@ return {
     if (!Array.isArray(messages) || messages.length === 0) return null;
 
     let lastUserIdx = -1;
-    for (let index = messages.length - 1; index >= 0; index -= 1) {
-      const role = String(messages[index]?.role || "").trim().toLowerCase();
-      if (!role || role === "user") {
-        lastUserIdx = index;
-        break;
-      }
+    for (let i = messages.length - 1; i >= 0; i -= 1) {
+      const role = String(messages[i]?.role || "").trim().toLowerCase();
+      if (!role || role === "user") { lastUserIdx = i; break; }
     }
     if (lastUserIdx === -1) return null;
 
@@ -157,8 +54,10 @@ return {
     };
   },
 
+  // ── extractResponse ─────────────────────────────────────────────────
+  // SSE events: CHUNK_DELTA, STREAM_MSG_NOTIFY, STREAM_CHUNK, SSE_REPLY_END.
   extractResponse(ctx) {
-    const responseText = toText(ctx.responseText);
+    const responseText = ctx.helpers.text.toText(ctx.responseText);
     if (!responseText) return null;
 
     const events = ctx.helpers.stream.readSseEvents(responseText);
@@ -170,41 +69,57 @@ return {
       if (!data || typeof data !== "object") continue;
 
       if (entry.event === "CHUNK_DELTA" && typeof data?.text === "string") {
-        bestText = mergeStreamingText(bestText, data.text);
+        bestText = _merge(bestText, data.text);
         if (ctx.helpers.protocol.containsProtocolBlock(bestText, ctx.protocol)) {
-          protocolAwareText = preferLongerText(protocolAwareText, bestText);
+          protocolAwareText = _longer(protocolAwareText, bestText);
         }
         continue;
       }
 
       if (entry.event === "STREAM_MSG_NOTIFY") {
-        const candidate = readNotifyBlocksText(data);
-        if (candidate) {
-          bestText = preferLongerText(bestText, candidate);
-          if (ctx.helpers.protocol.containsProtocolBlock(candidate, ctx.protocol)) {
-            protocolAwareText = preferLongerText(protocolAwareText, candidate);
+        const blocks = data?.content?.content_block;
+        if (Array.isArray(blocks)) {
+          const parts = [];
+          for (const b of blocks) {
+            if (b?.block_type === 10000 && typeof b?.content?.text_block?.text === "string") {
+              parts.push(b.content.text_block.text);
+            }
+          }
+          const joined = parts.filter(Boolean).join("\n");
+          if (joined) {
+            bestText = _longer(bestText, joined);
+            if (ctx.helpers.protocol.containsProtocolBlock(joined, ctx.protocol)) {
+              protocolAwareText = _longer(protocolAwareText, joined);
+            }
           }
         }
         continue;
       }
 
       if (entry.event === "STREAM_CHUNK") {
-        const chunkTexts = readStreamChunkTexts(data);
-        for (const chunkText of chunkTexts) {
-          bestText = mergeStreamingText(bestText, chunkText);
-          if (ctx.helpers.protocol.containsProtocolBlock(bestText, ctx.protocol)) {
-            protocolAwareText = preferLongerText(protocolAwareText, bestText);
+        const ops = Array.isArray(data?.patch_op) ? data.patch_op : [];
+        for (const op of ops) {
+          const blocks = op?.patch_value?.content_block;
+          if (Array.isArray(blocks)) {
+            for (const b of blocks) {
+              if (b?.block_type === 10000 && typeof b?.content?.text_block?.text === "string") {
+                bestText = _merge(bestText, b.content.text_block.text);
+                if (ctx.helpers.protocol.containsProtocolBlock(bestText, ctx.protocol)) {
+                  protocolAwareText = _longer(protocolAwareText, bestText);
+                }
+              }
+            }
           }
         }
         continue;
       }
 
       if (entry.event === "SSE_REPLY_END" && data?.end_type === 1) {
-        const brief = toText(data?.msg_finish_attr?.brief);
+        const brief = String(data?.msg_finish_attr?.brief ?? "").trim();
         if (brief) {
-          bestText = preferLongerText(bestText, brief);
+          bestText = _longer(bestText, brief);
           if (ctx.helpers.protocol.containsProtocolBlock(brief, ctx.protocol)) {
-            protocolAwareText = preferLongerText(protocolAwareText, brief);
+            protocolAwareText = _longer(protocolAwareText, brief);
           }
         }
       }
@@ -219,54 +134,75 @@ return {
       matchScore: 100,
       responseContentPath: "sse:CHUNK_DELTA.text",
       responseContentPreview: previewText,
-      toolCall: blocks.toolCallRaw
-        ? { detected: true, rawBlock: blocks.toolCallRaw }
-        : { detected: false },
-      toolResult: blocks.toolResultRaw
-        ? { detected: true, rawBlock: blocks.toolResultRaw }
-        : { detected: false },
-      codeMode: blocks.codeModeRaw
-        ? { detected: true, rawBlock: blocks.codeModeRaw }
-        : { detected: false },
+      toolCall: blocks.toolCallRaw ? { detected: true, rawBlock: blocks.toolCallRaw } : { detected: false },
+      toolResult: blocks.toolResultRaw ? { detected: true, rawBlock: blocks.toolResultRaw } : { detected: false },
+      codeMode: blocks.codeModeRaw ? { detected: true, rawBlock: blocks.codeModeRaw } : { detected: false },
     };
   },
 
+  // ── decorateBubbles ─────────────────────────────────────────────────
+  // 2026-05-08: data-testid attributes no longer exist.
+  // User bubble: .bg-g-send-msg-bubble-bg (atomic class on message text div)
+  // Assistant bubble: .container-P2rR72.flow-markdown-body (markdown body)
   decorateBubbles(ctx) {
     return ctx.helpers.ui.decorateProtocolBubbles({
       root: ctx.root || document,
       protocol: ctx.protocol,
-      userSelectors: ['[data-testid="send_message"]'],
-      assistantSelectors: ['[data-testid="receive_message"]'],
+      userSelectors: [
+        ".bg-g-send-msg-bubble-bg",
+      ],
+      assistantSelectors: [
+        ".container-P2rR72.flow-markdown-body",
+      ],
     });
   },
 
+  // ── continueConversation ────────────────────────────────────────────
+  // textarea: .semi-input-textarea (unchanged)
+  // send button: button with only SVG child in input row
   continueConversation(ctx) {
-    const inputSelectors = [
-      'textarea[data-testid="chat_input_input"]',
-      "textarea.semi-input-textarea",
-      'textarea[placeholder="发消息..."]',
-    ];
-
     return ctx.helpers.plans.dom({
       root: ctx.root,
       composerText: ctx.continuationText,
       input: {
-        selectors: inputSelectors,
+        selectors: [
+          "textarea.semi-input-textarea",
+          'textarea[placeholder="发消息..."]',
+        ],
         kind: "textarea",
         dispatchEvents: ["input", "change"],
       },
       send: {
-        mode: "enter",
-        targetSelectors: inputSelectors,
-        key: "Enter",
-        code: "Enter",
-        keyCode: 13,
-        which: 13,
-        charCode: 13,
-        shiftKey: false,
-        beforeSendDelayMs: 250,
-        successWaitMs: 1500,
+        mode: "click",
+        selectors: [
+          "#flow-end-msg-send[data-dbx-name='button'][aria-disabled='false']",
+          ".send-btn-wrapper > button#flow-end-msg-send",
+          ".send-btn-wrapper > button[data-dbx-name='button'][data-disabled='false']",
+          "button#flow-end-msg-send",
+          "button[data-dbx-name='button'][data-disabled='false'][data-loading='false']:has(svg)",
+          "button[class*='rounded-dbx-lg'][class*='size-36']:has(svg)",
+        ],
+        waitForEnabled: true,
+        maxWaitMs: 3000,
+        replayClickAfterManualInjection: true,
+        replayClickDelayMs: 220,
       },
     });
   },
 };
+
+// inline helpers
+function _merge(base, next) {
+  const a = String(base ?? ""), b = String(next ?? "");
+  if (!b) return a; if (!a) return b;
+  if (a.endsWith(b)) return a; if (b.startsWith(a)) return b;
+  const max = Math.min(a.length, b.length);
+  for (let s = max; s > 0; s -= 1) {
+    if (a.slice(-s) === b.slice(0, s)) return a + b.slice(s);
+  }
+  return a + b;
+}
+function _longer(a, b) {
+  const sa = String(a ?? ""), sb = String(b ?? "");
+  return sb.length > sa.length ? sb : sa || sb;
+}

@@ -131,7 +131,118 @@ export function stripProtocolArtifacts(
   return source.replace(/\n{3,}/g, "\n\n").trim();
 }
 
+type ToolResultTone = "success" | "error";
+
+function readIsErrorSignal(value: unknown, depth = 0): ToolResultTone | null {
+  if (depth > 10 || value == null) return null;
+
+  if (typeof value === "string") {
+    const normalized = value.trim();
+    if (!normalized || (!normalized.startsWith("{") && !normalized.startsWith("["))) {
+      return null;
+    }
+    const parsed = parseJsonSafely<unknown>(normalized);
+    return parsed == null ? null : readIsErrorSignal(parsed, depth + 1);
+  }
+
+  if (Array.isArray(value)) {
+    let hasSuccessSignal = false;
+    for (const item of value) {
+      const signal = readIsErrorSignal(item, depth + 1);
+      if (signal === "error") return "error";
+      if (signal === "success") hasSuccessSignal = true;
+    }
+    return hasSuccessSignal ? "success" : null;
+  }
+
+  if (typeof value !== "object") return null;
+
+  let hasSuccessSignal = false;
+  for (const [key, childValue] of Object.entries(value as Record<string, unknown>)) {
+    if (key === "isError" && typeof childValue === "boolean") {
+      if (childValue) return "error";
+      hasSuccessSignal = true;
+      continue;
+    }
+
+    const signal = readIsErrorSignal(childValue, depth + 1);
+    if (signal === "error") return "error";
+    if (signal === "success") hasSuccessSignal = true;
+  }
+
+  return hasSuccessSignal ? "success" : null;
+}
+
+function extractToolReturnResultSection(source: string) {
+  const marker = "返回结果:";
+  const start = source.indexOf(marker);
+  if (start < 0) return "";
+
+  const sectionStart = start + marker.length;
+  const nextSectionIndex = ["\n控制台输出:", "\n代码预览:", "\n诊断提示:"]
+    .map((sectionMarker) => source.indexOf(sectionMarker, sectionStart))
+    .filter((index) => index >= 0)
+    .sort((left, right) => left - right)[0];
+
+  return source
+    .slice(sectionStart, nextSectionIndex == null ? undefined : nextSectionIndex)
+    .trim();
+}
+
+function parseJsonOrContainedJson(source: string) {
+  const normalized = source.trim();
+  if (!normalized) return [] as unknown[];
+
+  const parsed = parseJsonSafely<unknown>(normalized);
+  if (parsed != null) return [parsed];
+
+  const candidates: string[] = [];
+  const objectStart = normalized.indexOf("{");
+  const objectEnd = normalized.lastIndexOf("}");
+  if (objectStart >= 0 && objectEnd > objectStart) {
+    candidates.push(normalized.slice(objectStart, objectEnd + 1));
+  }
+
+  const arrayStart = normalized.indexOf("[");
+  const arrayEnd = normalized.lastIndexOf("]");
+  if (arrayStart >= 0 && arrayEnd > arrayStart) {
+    candidates.push(normalized.slice(arrayStart, arrayEnd + 1));
+  }
+
+  return candidates
+    .map((candidate) => parseJsonSafely<unknown>(candidate))
+    .filter((candidate): candidate is unknown => candidate != null);
+}
+
+function inferToolResultToneFromIsError(text: unknown): ToolResultTone | null {
+  if (text && typeof text === "object") {
+    return readIsErrorSignal(text);
+  }
+
+  const source = String(text ?? "").trim();
+  if (!source) return null;
+
+  const structuredCandidates = [
+    source,
+    extractToolReturnResultSection(source),
+  ].filter(Boolean);
+
+  let hasSuccessSignal = false;
+  for (const candidate of structuredCandidates) {
+    for (const parsed of parseJsonOrContainedJson(candidate)) {
+      const signal = readIsErrorSignal(parsed);
+      if (signal === "error") return "error";
+      if (signal === "success") hasSuccessSignal = true;
+    }
+  }
+
+  return hasSuccessSignal ? "success" : null;
+}
+
 export function inferToolResultTone(text: unknown) {
+  const isErrorSignal = inferToolResultToneFromIsError(text);
+  if (isErrorSignal) return isErrorSignal;
+
   const source = String(text ?? "");
   if (!source) return "success" as const;
   return (

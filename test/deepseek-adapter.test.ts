@@ -134,7 +134,7 @@ const deepSeekThinkingWithProtocolSseSample = [
   "",
 ].join("\n");
 
-test("deepseek transformRequest injects into prompt", () => {
+test("deepseek transformRequest does not rewrite signed prompt requests", () => {
   const adapter = loadAdapter();
   const result = adapter.transformRequest({
     url: "https://chat.deepseek.com/api/v0/chat/completion",
@@ -151,10 +151,7 @@ test("deepseek transformRequest injects into prompt", () => {
     helpers: createHelpers(),
   });
 
-  assert.equal(result?.applied, true);
-  assert.equal(result?.requestMessagePath, "body-json:prompt");
-  assert.match(String(result?.bodyText || ""), /\[CHAT_PLUS_INJECTION_BEGIN\]/);
-  assert.match(String(result?.bodyText || ""), /帮我总结一下/);
+  assert.equal(result, null);
 });
 
 test("deepseek extractResponse rebuilds assistant text from fragment deltas", () => {
@@ -227,6 +224,43 @@ test("deepseek continueConversation returns an enter-based textarea plan", () =>
     'textarea[name="search"]',
     'textarea[placeholder="给 DeepSeek 发送消息 "]',
   ]);
+});
+
+test("deepseek continueConversation uses the DeepSeek send button when available", () => {
+  const adapter = loadAdapter();
+  const dom = new JSDOM(`
+    <!doctype html>
+    <html>
+      <body>
+        <textarea name="search" placeholder="给 DeepSeek 发送消息 "></textarea>
+        <div style="width: fit-content;">
+          <div class="_52c986b ds-icon-button ds-icon-button--l ds-icon-button--sizing-container" role="button" aria-disabled="false" tabindex="0">
+            <div class="ds-icon-button__hover-bg"></div>
+            <div class="ds-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16">
+                <path d="M8.3125 0.981587"></path>
+              </svg>
+            </div>
+            <div class="ds-focus-ring"></div>
+          </div>
+        </div>
+      </body>
+    </html>
+  `);
+
+  const result = adapter.continueConversation({
+    root: dom.window.document,
+    continuationText: "工具执行完成",
+    helpers: createHelpers(),
+  });
+
+  assert.equal(result?.mode, "dom");
+  assert.equal(result?.send?.mode, "click");
+  assert.deepEqual(Array.from(result?.input?.selectors || []), [
+    'textarea[name="search"]',
+    'textarea[placeholder="给 DeepSeek 发送消息 "]',
+  ]);
+  assert.ok(Array.from(result?.send?.selectors || []).some((selector) => String(selector).includes("ds-floating-button")));
 });
 
 test("deepseek decorateBubbles targets top-level turns so thinking blocks stay inside one assistant node", () => {

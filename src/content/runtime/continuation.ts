@@ -545,6 +545,45 @@ export function createContinuationController({
     return false;
   }
 
+  function resolveClickedSendElement(target: Element | null, selectorConfig: unknown) {
+    const selectors = normalizeSelectorList(selectorConfig);
+    if (target instanceof HTMLElement) {
+      for (const selector of selectors) {
+        try {
+          if (target.matches(selector)) return target;
+          const closest = target.closest(selector);
+          if (closest instanceof HTMLElement) return closest;
+        } catch {
+          // ignore invalid selector
+        }
+      }
+    }
+    return resolveContinuationElement(selectorConfig);
+  }
+
+  function scheduleManualInjectionClickReplay(
+    plan: Record<string, unknown>,
+    target: Element | null,
+  ) {
+    const sendPlan =
+      plan?.send && typeof plan.send === "object" && !Array.isArray(plan.send)
+        ? (plan.send as Record<string, unknown>)
+        : {};
+    if (sendPlan?.replayClickAfterManualInjection !== true) return;
+    if (String(sendPlan?.mode || "").trim().toLowerCase() !== "click") return;
+
+    const delayMs = Math.max(0, Number(sendPlan?.replayClickDelayMs ?? 180) || 0);
+    const selectorConfig = sendPlan?.selector || sendPlan?.selectors;
+
+    window.setTimeout(() => {
+      const sendElement = resolveClickedSendElement(target, selectorConfig);
+      if (!sendElement || !sendElement.isConnected || !isElementActuallyEnabled(sendElement)) {
+        return;
+      }
+      sendElement.click();
+    }, delayMs);
+  }
+
   async function refreshManualInjectionPlanCache() {
     if (!isPluginRuntimeEnabled() || !String(state.adapterScript || "").trim()) {
       cachedManualInjectionPlan = null;
@@ -661,6 +700,9 @@ export function createContinuationController({
     plan: Record<string, unknown>,
     injectionText: string,
     injectionMode: "system" | "raw",
+    options?: {
+      focusInput?: boolean;
+    },
   ): { ok: true; changed: boolean } | { ok: false; error: string } {
     const inputPlan =
       plan?.input && typeof plan.input === "object" && !Array.isArray(plan.input)
@@ -684,7 +726,9 @@ export function createContinuationController({
     const changed = normalizeMultilineText(nextText) !== normalizeMultilineText(currentText);
 
     if (changed) {
-      focusContinuationElement(inputElement);
+      if (options?.focusInput !== false) {
+        focusContinuationElement(inputElement);
+      }
       const setResult = setInputElementValue(inputElement, nextText, String(inputPlan?.kind || ""));
       if (!setResult.ok) {
         return {
@@ -746,10 +790,15 @@ export function createContinuationController({
       if (!candidate) break;
       planCandidates.splice(planCandidates.indexOf(candidate), 1);
 
-      const prepared = prepareManualInjectionWithPlan(candidate.plan, injectionText, injectionMode);
+      const prepared = prepareManualInjectionWithPlan(candidate.plan, injectionText, injectionMode, {
+        focusInput: params.triggerType !== "click",
+      });
       if ("error" in prepared) {
         errors.push(`${candidate.label}：${String(prepared.error || "输入框拼接失败")}`);
         continue;
+      }
+      if (params.triggerType === "click" && prepared.changed) {
+        scheduleManualInjectionClickReplay(candidate.plan, target);
       }
       scheduleManualInjectionPlanRefresh();
       return {
