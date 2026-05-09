@@ -369,6 +369,86 @@
   font-size: 0.74rem !important;
 }
 
+.cp-footer-version {
+  min-width: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+}
+
+.cp-update-check {
+  min-height: 28px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 9px !important;
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  cursor: pointer !important;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    color 180ms ease,
+    transform 160ms ease !important;
+}
+
+.cp-update-check {
+  position: relative !important;
+  padding: 0 10px !important;
+  border: 1px solid color-mix(in srgb, var(--cp-accent) 24%, var(--cp-border)) !important;
+  background: color-mix(in srgb, var(--cp-accent) 8%, var(--cp-surface)) !important;
+  color: var(--cp-accent-strong) !important;
+}
+
+.cp-update-check.is-upgrade {
+  border-color: color-mix(in srgb, var(--cp-success) 46%, var(--cp-border)) !important;
+  background: color-mix(in srgb, var(--cp-success) 15%, var(--cp-surface)) !important;
+  color: var(--cp-success) !important;
+}
+
+.cp-update-check.is-upgrade::after {
+  content: "" !important;
+  position: absolute !important;
+  top: -4px !important;
+  right: -4px !important;
+  width: 8px !important;
+  height: 8px !important;
+  border: 2px solid var(--cp-panel) !important;
+  border-radius: 50% !important;
+  background: var(--cp-danger) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--cp-danger) 18%, transparent) !important;
+}
+
+.cp-update-check.is-error {
+  border-color: color-mix(in srgb, var(--cp-danger) 42%, var(--cp-border)) !important;
+  background: color-mix(in srgb, var(--cp-danger) 12%, var(--cp-surface)) !important;
+  color: var(--cp-danger) !important;
+}
+
+.cp-update-check:hover:not(:disabled),
+.cp-update-check:focus-visible {
+  border-color: color-mix(in srgb, var(--cp-accent) 42%, var(--cp-border-strong)) !important;
+  background: color-mix(in srgb, var(--cp-accent) 12%, var(--cp-surface)) !important;
+  color: var(--cp-title) !important;
+}
+
+.cp-update-check:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--cp-accent) 28%, transparent) !important;
+  outline-offset: 2px !important;
+}
+
+.cp-update-check:active {
+  transform: translateY(1px) scale(0.97) !important;
+}
+
+.cp-update-check:disabled {
+  cursor: wait !important;
+  opacity: 0.74 !important;
+}
+
 .cp-status {
   display: inline-flex !important;
   align-items: center !important;

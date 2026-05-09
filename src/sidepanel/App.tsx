@@ -11,6 +11,12 @@ import {
 import { useSidepanelController } from "./hooks/useSidepanelController";
 import { OrchestrationPane } from "./panes/OrchestrationPane";
 import { getExtensionVersion } from "../shared/extensionMeta";
+import {
+  CHAT_PLUS_RELEASES_PAGE_URL,
+  type ReleaseUpdateInfo,
+  fetchLatestReleaseUpdate,
+  openReleasePage,
+} from "./lib/releaseUpdate";
 
 const LazyAboutPane = lazy(async () => {
   const module = await import("./panes/AboutPane");
@@ -49,6 +55,14 @@ export default function App() {
   const safeHosts = Array.isArray(controller.hosts) ? controller.hosts : [];
   const [backupMenuOpen, setBackupMenuOpen] = useState(false);
   const backupMenuRef = useRef<HTMLDivElement | null>(null);
+  const [releaseUpdate, setReleaseUpdate] = useState<ReleaseUpdateInfo | null>(null);
+  const [releaseUpdateStatus, setReleaseUpdateStatus] = useState<
+    "idle" | "checking" | "ready" | "error"
+  >("idle");
+  const [releaseUpdateError, setReleaseUpdateError] = useState("");
+  const releaseUpdateResetTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(
+    null,
+  );
   const [loadedPanes, setLoadedPanes] = useState({
     site: controller.activePane === "site",
     tools: controller.activePane === "tools",
@@ -84,6 +98,74 @@ export default function App() {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [backupMenuOpen]);
+
+  useEffect(
+    () => () => {
+      if (releaseUpdateResetTimerRef.current) {
+        window.clearTimeout(releaseUpdateResetTimerRef.current);
+      }
+    },
+    [],
+  );
+
+  const resetReleaseUpdateSoon = () => {
+    if (releaseUpdateResetTimerRef.current) {
+      window.clearTimeout(releaseUpdateResetTimerRef.current);
+    }
+
+    releaseUpdateResetTimerRef.current = window.setTimeout(() => {
+      setReleaseUpdate(null);
+      setReleaseUpdateStatus("idle");
+      setReleaseUpdateError("");
+      releaseUpdateResetTimerRef.current = null;
+    }, 1800);
+  };
+
+  const handleCheckReleaseUpdate = async () => {
+    if (releaseUpdateStatus === "checking") return;
+
+    if (releaseUpdateResetTimerRef.current) {
+      window.clearTimeout(releaseUpdateResetTimerRef.current);
+      releaseUpdateResetTimerRef.current = null;
+    }
+
+    setReleaseUpdateStatus("checking");
+    setReleaseUpdateError("");
+
+    try {
+      const latestRelease = await fetchLatestReleaseUpdate(extensionVersion);
+      setReleaseUpdateStatus("ready");
+
+      if (latestRelease.isNewer) {
+        setReleaseUpdate(latestRelease);
+        return;
+      }
+
+      setReleaseUpdate(null);
+      resetReleaseUpdateSoon();
+    } catch (error) {
+      setReleaseUpdate(null);
+      setReleaseUpdateStatus("error");
+      setReleaseUpdateError(error instanceof Error ? error.message : "检测更新失败");
+      resetReleaseUpdateSoon();
+    }
+  };
+
+  const releaseUpdateText =
+    releaseUpdateStatus === "checking"
+      ? "检测中..."
+      : releaseUpdateStatus === "error"
+        ? "检测失败"
+        : releaseUpdate?.isNewer
+          ? `升级到 v${releaseUpdate.version}`
+          : releaseUpdateStatus === "ready"
+            ? "已是最新"
+            : "检测更新";
+  const releaseUpdateTitle =
+    releaseUpdateStatus === "error"
+      ? releaseUpdateError || "检测更新失败"
+      : releaseUpdate?.name || "检查 GitHub Releases 最新版本";
+  const releasePageUrl = releaseUpdate?.pageUrl || CHAT_PLUS_RELEASES_PAGE_URL;
 
   return (
     <div
@@ -260,7 +342,22 @@ export default function App() {
           ) : null}
         </div>
         <div className="cp-footer">
-          <span>{`Chat Plus v${extensionVersion}`}</span>
+          <div className="cp-footer-version">
+            <span>{`Chat Plus v${extensionVersion}`}</span>
+            <button
+              className={`cp-update-check${releaseUpdate?.isNewer ? " is-upgrade" : ""}${releaseUpdateStatus === "error" ? " is-error" : ""}`}
+              type="button"
+              title={releaseUpdateTitle}
+              disabled={releaseUpdateStatus === "checking"}
+              onClick={
+                releaseUpdate?.isNewer
+                  ? () => openReleasePage(releasePageUrl)
+                  : handleCheckReleaseUpdate
+              }
+            >
+              {releaseUpdateText}
+            </button>
+          </div>
           <span
             className={`cp-status${controller.settings.enabled ? "" : " is-disabled"}`}
           >
