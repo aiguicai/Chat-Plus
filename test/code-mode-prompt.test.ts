@@ -38,4 +38,8 @@ test("code mode prompt explains local safe execution and fixed output contract",
   assert.match(result.content, /tools\.<serverAlias>\.<toolAlias>\(args\)/);
   assert.match(result.content, /只有当你这次实际要调用至少一个下方提供的 `tools\.\*` 接口时，才允许输出 Code Mode 代码块/);
   assert.match(result.content, /如果你写出的内容里不会实际调用任何 `tools\.\*`，就不要输出 JavaScript，不要输出 Code Mode 块，直接正常用自然语言回答/);
+  assert.match(result.content, /错误修正规则/);
+  assert.match(result.content, /ReferenceError/);
+  assert.match(result.content, /上一段 Code Mode 里的局部变量/);
+  assert.match(result.content, /不要原样重试同一段代码/);
 });

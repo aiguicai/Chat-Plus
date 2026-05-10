@@ -228,6 +228,147 @@ import {
     return /^[\p{L}\p{N}\p{Script=Han}\s:_\-\[\](){}.,/\\]+$/u.test(prefix);
   }
 
+  function getCodeModeErrorName(error: unknown, errorText = "") {
+    if (error instanceof Error && String(error.name || "").trim()) {
+      return String(error.name || "").trim();
+    }
+
+    const match = String(errorText || error || "").trim().match(/^([A-Z][A-Za-z]*Error)\b/u);
+    return match?.[1] || "";
+  }
+
+  function formatCodeModeErrorText(error: unknown) {
+    if (error instanceof Error) {
+      const name = String(error.name || "").trim();
+      const message = String(error.message || "").trim();
+      if (name && message && !message.startsWith(`${name}:`)) {
+        return `${name}: ${message}`;
+      }
+      return message || name || String(error);
+    }
+
+    return String(error || "代码执行失败").trim();
+  }
+
+  function buildCodeModeErrorSummary(error: unknown, stage: "compile" | "runtime") {
+    const errorText = formatCodeModeErrorText(error);
+    const errorName = getCodeModeErrorName(error, errorText);
+
+    if (errorName === "ReferenceError" || /\bis not defined\b/i.test(errorText)) {
+      return "ReferenceError（未定义标识符）";
+    }
+    if (/代码模式不支持/i.test(errorText)) {
+      return "Code Mode 语法限制";
+    }
+    if (/MCP 工具调用失败|工具调用失败|tool call/i.test(errorText)) {
+      return "MCP 工具调用失败";
+    }
+    if (errorName === "SyntaxError" || stage === "compile") {
+      return "SyntaxError（JavaScript 语法/编译错误）";
+    }
+    if (errorName === "TypeError") {
+      return "TypeError（对象结构或调用方式不匹配）";
+    }
+
+    return "";
+  }
+
+  function buildCodeModeErrorDiagnosticNotes(error: unknown, stage: "compile" | "runtime") {
+    const errorText = formatCodeModeErrorText(error);
+    const errorName = getCodeModeErrorName(error, errorText);
+    const notes: string[] = [];
+    const addNote = (note: string) => {
+      const normalized = String(note || "").trim();
+      if (normalized && !notes.includes(normalized)) {
+        notes.push(normalized);
+      }
+    };
+
+    const undefinedMatch = errorText.match(/\b([A-Za-z_$][\w$]*) is not defined\b/u);
+    if (errorName === "ReferenceError" || undefinedMatch) {
+      const identifier = undefinedMatch?.[1] || "某个变量";
+      addNote(
+        `检测到未定义标识符 \`${identifier}\`：本次 Code Mode 代码里引用了当前执行作用域中不存在的变量、函数或工具别名。`,
+      );
+      addNote(
+        "Code Mode 每次运行都是全新的隔离作用域；上一段代码里的 `const`、`let`、函数、临时对象和中间结果不会自动保留到下一段代码。",
+      );
+      addNote(
+        "修正方式：下一段代码必须重新声明需要的变量，或从本轮可见的对话信息/上次明确 `return` 出来的值重建输入；如果需要工具结果，就重新调用对应 `tools.*`，不要直接复用上一轮局部变量。",
+      );
+    }
+
+    if (
+      errorName === "SyntaxError" ||
+      stage === "compile" ||
+      /Unexpected token|Unexpected identifier|missing|Invalid or unexpected token|unterminated/i.test(errorText)
+    ) {
+      addNote(
+        "这是编译阶段的 JavaScript 语法错误，代码还没有开始调用工具；先修正括号、逗号、引号、字符串换行或对象字面量格式。",
+      );
+      addNote(
+        "下一段仍然只输出 Code Mode 允许的普通 JavaScript；不要加 Markdown 代码块、import/export、XML 工具标签或解释文本。",
+      );
+    }
+
+    const readPropertyMatch = errorText.match(
+      /Cannot read propert(?:y|ies) of (undefined|null)(?: \(reading ['"]?([^'")]+)['"]?\))?/iu,
+    );
+    if (readPropertyMatch) {
+      const property = readPropertyMatch[2] ? ` \`${readPropertyMatch[2]}\`` : "";
+      addNote(
+        `检测到读取${property}属性时目标对象是 ${readPropertyMatch[1]}：通常是工具返回结构和代码里假设的字段路径不一致。`,
+      );
+      addNote(
+        "修正方式：按工具结果实际结构取值，优先看 `structuredContent`，再看 `content[]` 里的 `text`，必要时用可选链或显式判断后再读取字段。",
+      );
+    }
+
+    if (/\bis not a function\b/i.test(errorText)) {
+      addNote(
+        "检测到把非函数当函数调用：常见原因是工具引用写错、工具别名不存在、或从返回对象里取到的字段不是函数。",
+      );
+      addNote(
+        "修正方式：工具调用语法必须严格使用当前提示里列出的 `tools.<serverAlias>.<toolAlias>(args)`；不要发明新的工具名、包装函数或原生 function calling 格式。",
+      );
+    }
+
+    if (/Cannot access ['"][^'"]+['"] before initialization/i.test(errorText)) {
+      addNote(
+        "检测到变量在初始化前被访问：检查同名 `let`/`const` 的声明顺序，先声明并赋值，再读取或传给工具。",
+      );
+    }
+
+    if (/Assignment to constant variable/i.test(errorText)) {
+      addNote(
+        "检测到给 `const` 变量重新赋值：需要重新赋值时改用 `let`，或新建另一个变量保存下一步结果。",
+      );
+    }
+
+    if (/MCP 工具调用失败|工具调用失败|tool call/i.test(errorText)) {
+      addNote(
+        "这是工具调用返回的失败，不是普通 JS 语法问题；下一段应根据错误里的服务、工具名和具体原因修正参数，或在缺少关键信息时向用户追问。",
+      );
+      addNote(
+        "不要原样重试同一段代码；先确认必填参数、字段类型、服务是否启用，以及工具返回的错误详情。",
+      );
+    }
+
+    if (/代码模式不支持\s+(.+)/i.test(errorText)) {
+      addNote(
+        "当前 Code Mode 禁用了这类语法；请改写为允许的顶层 `const` / `let` / `await` / `return`、`if`、`for...of`、`Promise.all` 等形式。",
+      );
+    }
+
+    if (!notes.length && !/用户已停止执行/.test(errorText)) {
+      addNote(
+        "下一段应基于这次错误信息改写代码，保留真实工具调用链路；如果无法从当前对话可靠推断关键参数，再向用户追问。",
+      );
+    }
+
+    return notes;
+  }
+
   function formatCodeModeFeedback({
     ok,
     stage,
@@ -251,7 +392,11 @@ import {
     ];
 
     if (error) {
-      lines.push(`错误: ${String(error)}`);
+      lines.push(`错误: ${formatCodeModeErrorText(error)}`);
+      const errorSummary = buildCodeModeErrorSummary(error, stage);
+      if (errorSummary) {
+        lines.push(`错误类型: ${errorSummary}`);
+      }
     }
 
     const normalizedResult = serializeCodeModeResult(result);
@@ -277,9 +422,13 @@ import {
       lines.push(debugCodePreview);
     }
 
-    const normalizedDiagnosticNotes = Array.isArray(diagnosticNotes)
-      ? diagnosticNotes.map((entry) => String(entry || "").trim()).filter(Boolean)
-      : [];
+    const errorDiagnosticNotes = error ? buildCodeModeErrorDiagnosticNotes(error, stage) : [];
+    const normalizedDiagnosticNotes = [
+      ...errorDiagnosticNotes,
+      ...(Array.isArray(diagnosticNotes) ? diagnosticNotes : []),
+    ]
+      .map((entry) => String(entry || "").trim())
+      .filter((entry, index, entries) => Boolean(entry) && entries.indexOf(entry) === index);
     if (normalizedDiagnosticNotes.length) {
       lines.push("诊断提示:");
       normalizedDiagnosticNotes.forEach((entry) => {
@@ -908,7 +1057,19 @@ ${normalized}`,
 
     const unsupportedSyntax = findUnsupportedCodeModeSyntax(normalizedCode);
     if (unsupportedSyntax) {
-      return { ok: false, error: `代码模式不支持 ${unsupportedSyntax}` };
+      const error = `代码模式不支持 ${unsupportedSyntax}`;
+      return {
+        ok: false,
+        stage: "compile",
+        error,
+        debugCodePreview: createDebugCodePreview(normalizedCode),
+        resultText: formatCodeModeFeedback({
+          ok: false,
+          stage: "compile",
+          error,
+          debugCodePreview: createDebugCodePreview(normalizedCode),
+        }),
+      };
     }
 
     const { tools, toolDocs } = createCodeModeRuntime(manifest, normalizedRunId);
@@ -947,7 +1108,7 @@ ${normalized}`,
         `"use strict";\nreturn (async () => {\n${effectiveCode}\n})();`,
       ) as typeof runner;
     } catch (error) {
-      compileErrorMessage = String((error as any)?.message || error || "代码编译失败");
+      compileErrorMessage = formatCodeModeErrorText(error || "代码编译失败");
       const repaired = repairLikelyBrokenQuotedStrings(normalizedCode);
       if (repaired.changed && repaired.code !== normalizedCode) {
         try {
@@ -971,7 +1132,7 @@ ${normalized}`,
           effectiveCode = normalizedCode;
           compileErrorMessage = [
             compileErrorMessage,
-            String((repairError as any)?.message || repairError || ""),
+            formatCodeModeErrorText(repairError || ""),
           ]
             .filter(Boolean)
             .join("；修复后仍失败：");
@@ -1039,16 +1200,17 @@ ${normalized}`,
         }),
       };
     } catch (error) {
+      const runtimeErrorText = formatCodeModeErrorText(error || "代码执行失败");
       return {
         ok: false,
         cancelled: isCancelledRun(normalizedRunId),
         stage: "runtime",
-        error: String((error as any)?.message || error || "代码执行失败"),
+        error: runtimeErrorText,
         debugCodePreview,
         resultText: formatCodeModeFeedback({
           ok: false,
           stage: "runtime",
-          error: String((error as any)?.message || error || "代码执行失败"),
+          error: error || runtimeErrorText,
           consoleEntries: restrictedConsole.entries,
           debugCodePreview,
         }),
