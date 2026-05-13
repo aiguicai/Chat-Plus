@@ -45,6 +45,7 @@ import {
 } from "../sidepanel/lib/siteConfig";
 
 const CONNECTION_IDLE_TTL_MS = 5 * 60 * 1000;
+const TOOL_EXECUTION_TIMEOUT_MS = 60 * 60 * 1000;
 
 type StoredMcpState = {
   config: McpConfigStore;
@@ -727,10 +728,14 @@ async function handleToolCall(message: any) {
 
   try {
     const entry = await getPooledClient(server);
-    const result = await entry.client.callTool({
-      name: toolName,
-      arguments: args,
-    });
+    const result = await entry.client.callTool(
+      {
+        name: toolName,
+        arguments: args,
+      },
+      undefined,
+      { timeout: TOOL_EXECUTION_TIMEOUT_MS },
+    );
     entry.lastUsedAt = Date.now();
 
     return {

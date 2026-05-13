@@ -3,6 +3,8 @@ import {
   type ContentRuntimeState,
 } from "./contentRuntimeState";
 
+const TOOL_EXECUTION_TIMEOUT_MS = 60 * 60 * 1000;
+
 type CreateAdapterSandboxControllerOptions = {
   state: ContentRuntimeState;
   isPluginRuntimeEnabled: () => boolean;
@@ -369,7 +371,7 @@ export function createAdapterSandboxController({
         code: normalizedCode,
         manifest,
         runId,
-        timeoutMs: 0,
+        timeoutMs: TOOL_EXECUTION_TIMEOUT_MS,
       });
       return response && typeof response === "object"
         ? (response as Record<string, unknown>)
