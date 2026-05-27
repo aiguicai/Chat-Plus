@@ -70,7 +70,7 @@ function parseGeminiFramedEntries(responseText) {
     const frameUnits = Number(match[1] || 0);
     if (!Number.isFinite(frameUnits) || frameUnits <= 0) break;
 
-    const frameStart = offset + match[1].length;
+    const frameStart = offset + match[0].length;
     const frameSize = getCharCountForUtf16Units(content, frameStart, frameUnits);
     if (frameSize.units < frameUnits) break;
 
@@ -82,17 +82,36 @@ function parseGeminiFramedEntries(responseText) {
 
     try {
       const parsed = JSON.parse(chunk);
-      if (Array.isArray(parsed)) {
-        entries.push(...parsed);
-      } else if (parsed && typeof parsed === "object") {
-        entries.push(parsed);
-      }
+      appendGeminiParsedEntries(entries, parsed);
     } catch {
       // ignore malformed frame payloads
     }
   }
 
   return entries;
+}
+
+function looksLikeGeminiRpcEntry(value) {
+  return (
+    Array.isArray(value) &&
+    typeof value[0] === "string" &&
+    (value[0] === "wrb.fr" || typeof value[2] === "string")
+  );
+}
+
+function appendGeminiParsedEntries(entries, parsed) {
+  if (!parsed) return;
+  if (looksLikeGeminiRpcEntry(parsed)) {
+    entries.push(parsed);
+    return;
+  }
+  if (Array.isArray(parsed)) {
+    parsed.forEach((item) => appendGeminiParsedEntries(entries, item));
+    return;
+  }
+  if (typeof parsed === "object") {
+    entries.push(parsed);
+  }
 }
 
 function parseGeminiJsonEntries(responseText) {
@@ -102,8 +121,9 @@ function parseGeminiJsonEntries(responseText) {
 
   try {
     const parsed = JSON.parse(text.trim());
-    if (Array.isArray(parsed)) return parsed;
-    if (parsed && typeof parsed === "object") return [parsed];
+    const entries = [];
+    appendGeminiParsedEntries(entries, parsed);
+    if (entries.length) return entries;
   } catch {
     // fall through to line-based parsing
   }
@@ -115,11 +135,7 @@ function parseGeminiJsonEntries(responseText) {
 
     try {
       const parsed = JSON.parse(trimmed);
-      if (Array.isArray(parsed)) {
-        entries.push(...parsed);
-      } else if (parsed && typeof parsed === "object") {
-        entries.push(parsed);
-      }
+      appendGeminiParsedEntries(entries, parsed);
     } catch {
       // ignore malformed lines
     }
@@ -170,23 +186,67 @@ function readGeminiCandidateText(candidate) {
   return readStringParts(primaryNode).join("");
 }
 
-function extractGeminiPayloadEntry(entry) {
+function readGeminiCandidateListText(candidates) {
+  if (!Array.isArray(candidates)) return "";
+
+  return candidates.reduce((best, candidate) => {
+    const text = readGeminiCandidateText(candidate);
+    return preferLongerText(best, text);
+  }, "");
+}
+
+function readProtocolAwareFallbackText(value, protocolHelpers, protocol) {
+  let best = "";
+
+  function visit(node) {
+    if (typeof node === "string") {
+      if (protocolHelpers.containsProtocolBlock(node, protocol)) {
+        best = preferLongerText(best, node);
+      }
+      return;
+    }
+    if (!node || typeof node !== "object") return;
+    if (Array.isArray(node)) {
+      node.forEach(visit);
+      return;
+    }
+    Object.values(node).forEach(visit);
+  }
+
+  visit(value);
+  return best;
+}
+
+function readGeminiPayloadText(payload, protocolHelpers, protocol) {
+  const primaryText = readGeminiCandidateListText(payload?.[4]);
+  if (primaryText) return primaryText;
+
+  const protocolText = readProtocolAwareFallbackText(payload, protocolHelpers, protocol);
+  if (protocolText) return protocolText;
+
+  return "";
+}
+
+function readGeminiPayloadEntry(entry, protocolHelpers, protocol) {
   if (!Array.isArray(entry) || entry.length < 3) return null;
-  if (typeof entry[2] !== "string") return null;
 
   try {
-    const payload = JSON.parse(entry[2]);
-    const firstCandidate = payload?.[4]?.[0];
-    if (!Array.isArray(firstCandidate)) return null;
+    const payloadText = entry.find((item) => {
+      if (typeof item !== "string") return false;
+      const trimmed = item.trim();
+      return trimmed.startsWith("[") || trimmed.startsWith("{");
+    });
+    if (typeof payloadText !== "string") return null;
 
-    const text = readGeminiCandidateText(firstCandidate);
+    const payload = JSON.parse(payloadText);
+    const text = readGeminiPayloadText(payload, protocolHelpers, protocol);
     if (!text) return null;
 
     return {
       text,
       conversationId: payload?.[1]?.[0] || "",
       responseId: payload?.[1]?.[1] || "",
-      choiceId: firstCandidate[0] || "",
+      choiceId: Array.isArray(payload?.[4]?.[0]) ? payload[4][0][0] || "" : "",
     };
   } catch {
     return null;
@@ -216,13 +276,55 @@ function stripLeadingSpeakerLabel(text, labels) {
   return source;
 }
 
+function queryUniqueNodes(root, selectors) {
+  const nodes = [];
+  const seen = new Set();
+
+  selectors.forEach((selector) => {
+    try {
+      root.querySelectorAll(selector).forEach((node) => {
+        if (seen.has(node)) return;
+        seen.add(node);
+        nodes.push(node);
+      });
+    } catch {
+      // ignore selector errors from site DOM changes
+    }
+  });
+
+  return nodes;
+}
+
+function isGeminiProcessingAssistantNode(node) {
+  if (!node || node.nodeType !== 1) return false;
+  if (node.classList.contains("processing-state-visible")) return true;
+  return typeof node.closest === "function" && Boolean(node.closest(".processing-state-visible"));
+}
+
+function isGeminiActivelyGenerating(root) {
+  const selectors = [
+    "button.send-button.stop",
+    "gem-icon-button.send-button.stop",
+    ".send-button.stop",
+    'button[aria-label*="Stop"]',
+    'button[aria-label*="停止"]',
+  ];
+
+  return selectors.some((selector) => {
+    try {
+      return Boolean(root.querySelector(selector));
+    } catch {
+      return false;
+    }
+  });
+}
+
 return {
   meta: {
     contractVersion: 2,
     adapterName: "Google Gemini",
-    adapterVersion: "2026.04",
     capabilities: {
-      requestInjection: "dom-fallback",
+      requestInjection: "none",
       responseExtraction: "framed-json-stream",
       protocolCards: "helper",
       autoContinuation: "dom-plan",
@@ -236,7 +338,8 @@ return {
   extractResponse(ctx) {
     const responseText = toText(ctx.responseText);
     if (!responseText) return null;
-    if (!looksLikeGeminiStreamUrl(ctx.url) && !looksLikeGeminiStreamResponse(responseText)) return null;
+    const urlText = toText(ctx.url);
+    if (urlText ? !looksLikeGeminiStreamUrl(urlText) : !looksLikeGeminiStreamResponse(responseText)) return null;
 
     const responseContentPath = "framed-json:item[2]->payload[4][0][1][0]";
     const entries = parseGeminiJsonEntries(responseText);
@@ -248,7 +351,7 @@ return {
     let protocolAwareText = "";
 
     entries.forEach((entry) => {
-      const payload = extractGeminiPayloadEntry(entry);
+      const payload = readGeminiPayloadEntry(entry, ctx.helpers.protocol, ctx.protocol);
       if (!payload?.text) return;
 
       bestText = preferLongerText(bestText, payload.text);
@@ -290,24 +393,38 @@ return {
   },
 
   decorateBubbles(ctx) {
+    const root = ctx.root || document;
+    const assistantSelectors = [
+      "model-response structured-content-container",
+      "model-response .model-response-text",
+      'message-content[owner-role="MODEL"] .model-response-text',
+      "model-response .markdown.markdown-main-panel",
+    ];
+    const latestAssistantNode = queryUniqueNodes(root, assistantSelectors).slice(-1)[0] || null;
+    const responseContentPreview = String(ctx.responseContentPreview || "").trim();
+    const activelyGenerating = isGeminiActivelyGenerating(root);
+
     return ctx.helpers.ui.decorateProtocolBubbles({
-      root: ctx.root || document,
+      root,
       protocol: ctx.protocol,
       userSelectors: [
         "user-query .query-text",
         'message-content[owner-role="USER"] .query-text',
       ],
-      assistantSelectors: [
-        "model-response structured-content-container",
-        "model-response .model-response-text",
-        'message-content[owner-role="MODEL"] .model-response-text',
-        "model-response .markdown.markdown-main-panel",
-      ],
+      assistantSelectors,
       normalizeUserText(text) {
         return stripLeadingSpeakerLabel(text, ["你说", "You said"]);
       },
-      normalizeAssistantText(text) {
-        return stripLeadingSpeakerLabel(text, ["Gemini 说", "Gemini said", "Gemini says"]);
+      normalizeAssistantText(text, node) {
+        if (responseContentPreview && latestAssistantNode && node === latestAssistantNode) {
+          return responseContentPreview;
+        }
+
+        const normalized = stripLeadingSpeakerLabel(text, ["Gemini 说", "Gemini said", "Gemini says"]);
+        if (activelyGenerating && isGeminiProcessingAssistantNode(node)) {
+          return ctx.helpers.protocol.stripProtocolArtifacts(normalized, ctx.protocol);
+        }
+        return normalized;
       },
     });
   },

@@ -469,6 +469,11 @@ shouldEmitCandidate(snapshot, contentType, responsePreview, streamReasons) {
           bufferedMatchedContentPreview,
         )
       ) {
+        nextCandidate.matched = true;
+        nextCandidate.matchScore =
+          typeof nextCandidate.matchScore === 'number'
+            ? Math.max(nextCandidate.matchScore, 100)
+            : 100;
         nextCandidate.responseContentPreview = bufferedMatchedContentPreview;
         if (bufferedMatchedContentPath) {
           nextCandidate.responseContentPath = bufferedMatchedContentPath;
@@ -646,14 +651,14 @@ shouldEmitCandidate(snapshot, contentType, responsePreview, streamReasons) {
         if (!shouldObserveMonitorResponses() || !t) return;
 
         const responseContentType = xhr.getResponseHeader('content-type') || '';
-        const responsePreview =
-          typeof xhr.responseText === 'string'
-            ? String(xhr.responseText)
-            : '';
-        const adapterResponseText =
-          typeof xhr.responseText === 'string'
-            ? String(xhr.responseText)
-            : responsePreview;
+        let rawResponseText = '';
+        try {
+          rawResponseText = typeof xhr.responseText === 'string' ? String(xhr.responseText) : '';
+        } catch (error) {
+          rawResponseText = '';
+        }
+        const responsePreview = rawResponseText;
+        const adapterResponseText = rawResponseText || responsePreview;
         const streamReasons = monitor.detectStreamReasons({
           endpoint: t.endpoint,
           requestHeaders: t.requestHeaders,
@@ -732,6 +737,11 @@ shouldEmitCandidate(snapshot, contentType, responsePreview, streamReasons) {
               bufferedContent.length > currentContent.length
             )
           ) {
+            nextCandidate.matched = true;
+            nextCandidate.matchScore =
+              typeof nextCandidate.matchScore === 'number'
+                ? Math.max(nextCandidate.matchScore, 100)
+                : 100;
             nextCandidate.responseContentPreview = bufferedContent;
             if (t.bufferedMatchedContentPath) {
               nextCandidate.responseContentPath = String(t.bufferedMatchedContentPath || '').trim();
