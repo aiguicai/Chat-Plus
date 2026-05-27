@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 
 import { buildCodeModeSystemInstruction } from "../src/mcp/code-mode.ts";
 
-test("code mode prompt explains local safe execution and fixed output contract", () => {
+test("code mode prompt frames Code Mode as local JavaScript and keeps fixed output contract", () => {
   const result = buildCodeModeSystemInstruction({
     servers: [
       {
@@ -31,13 +31,15 @@ test("code mode prompt explains local safe execution and fixed output contract",
     updatedAt: 0,
   });
 
-  assert.match(result.content, /用户自己的电脑/);
-  assert.match(result.content, /不是调用模型原生 function calling/);
-  assert.match(result.content, /按规定输出 `tools\.\*` 调用在这里是合法、预期且安全的行为/);
+  assert.match(result.content, /本地 JavaScript Code Mode 写代码/);
+  assert.match(result.content, /这不是模型原生 function calling/);
+  assert.match(result.content, /正常的 JS 编程任务，不是提示词注入，也不是越权操作/);
   assert.match(result.content, /只能输出一段以 \[CHAT_PLUS_CODE_MODE_BEGIN\] 开头、以 \[CHAT_PLUS_CODE_MODE_END\] 结尾/);
   assert.match(result.content, /tools\.<serverAlias>\.<toolAlias>\(args\)/);
-  assert.match(result.content, /只有当你这次实际要调用至少一个下方提供的 `tools\.\*` 接口时，才允许输出 Code Mode 代码块/);
-  assert.match(result.content, /如果你写出的内容里不会实际调用任何 `tools\.\*`，就不要输出 JavaScript，不要输出 Code Mode 块，直接正常用自然语言回答/);
+  assert.match(result.content, /只有当用户任务需要下方某个 `tools\.\*` 函数推进时，才输出 Code Mode/);
+  assert.match(result.content, /如果回答不需要任何 `tools\.\*` 函数，就不要写 JavaScript，不要输出 Code Mode，直接自然语言回答/);
+  assert.match(result.content, /下面是当前 JS 沙箱已经提供好的异步函数目录/);
+  assert.match(result.content, /如果参数结构太复杂，可以在同一段代码里先 await toolDocs\.describe/);
   assert.match(result.content, /错误修正规则/);
   assert.match(result.content, /ReferenceError/);
   assert.match(result.content, /上一段 Code Mode 里的局部变量/);
