@@ -2,6 +2,8 @@ import {
   CODE_MODE_AUTO_CONTINUE_STORAGE_KEY,
   CODE_MODE_AUTO_CONTINUE_DELAY_STORAGE_KEY,
   normalizeCodeModeAutoContinueDelaySeconds,
+  stringifyCodeModeAutoContinueDelayConfig,
+  type CodeModeAutoContinueDelayValue,
   type ContentRuntimeState,
 } from "./contentRuntimeState";
 import { wrapChatPlusInjection } from "../../shared/chatplus-protocol";
@@ -50,9 +52,9 @@ export function createSystemInjectionTrackingController({
     return Boolean(config?.enabled && normalizeTrackedText(config.content));
   }
 
-  function persistCodeModeAutoContinueDelaySeconds(seconds: number) {
+  function persistCodeModeAutoContinueDelaySeconds(delayConfig: CodeModeAutoContinueDelayValue) {
     chrome.storage.sync.set({
-      [CODE_MODE_AUTO_CONTINUE_DELAY_STORAGE_KEY]: normalizeCodeModeAutoContinueDelaySeconds(seconds),
+      [CODE_MODE_AUTO_CONTINUE_DELAY_STORAGE_KEY]: stringifyCodeModeAutoContinueDelayConfig(delayConfig),
     });
   }
 
@@ -73,10 +75,11 @@ export function createSystemInjectionTrackingController({
   }
 
   function setCodeModeAutoContinueDelaySeconds(value: unknown, persist = false) {
-    state.codeMode.autoContinueDelaySeconds = normalizeCodeModeAutoContinueDelaySeconds(value);
+    const nextDelayConfig = normalizeCodeModeAutoContinueDelaySeconds(value);
+    state.codeMode.autoContinueDelaySeconds = nextDelayConfig;
     renderSystemInjectionWidget();
     if (persist) {
-      persistCodeModeAutoContinueDelaySeconds(state.codeMode.autoContinueDelaySeconds);
+      persistCodeModeAutoContinueDelaySeconds(nextDelayConfig);
     }
   }
 
