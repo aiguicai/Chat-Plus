@@ -293,6 +293,11 @@ export function createContinuationController({
     return true;
   }
 
+  function isContinuationTargetAllowed(element: Element | null): element is HTMLElement {
+    if (!(element instanceof HTMLElement)) return false;
+    return !isChatPlusRuntimeNode(element);
+  }
+
   function resolveContinuationElement(selectorConfig: unknown, fallbackSelector = "") {
     const selectors = [
       ...normalizeSelectorList(selectorConfig),
@@ -300,9 +305,11 @@ export function createContinuationController({
     ];
     for (const selector of selectors) {
       try {
-        const element = document.querySelector(selector);
-        if (element instanceof HTMLElement) {
-          return element;
+        const elements = document.querySelectorAll(selector);
+        for (const element of Array.from(elements)) {
+          if (isContinuationTargetAllowed(element)) {
+            return element;
+          }
         }
       } catch {
         // ignore invalid selector
@@ -532,6 +539,7 @@ export function createContinuationController({
 
   function matchesSelectorConfig(target: Element | null, selectorConfig: unknown) {
     if (!(target instanceof Element)) return false;
+    if (isChatPlusRuntimeNode(target)) return false;
     const selectors = normalizeSelectorList(selectorConfig);
     for (const selector of selectors) {
       try {
@@ -547,12 +555,12 @@ export function createContinuationController({
 
   function resolveClickedSendElement(target: Element | null, selectorConfig: unknown) {
     const selectors = normalizeSelectorList(selectorConfig);
-    if (target instanceof HTMLElement) {
+    if (target instanceof HTMLElement && isContinuationTargetAllowed(target)) {
       for (const selector of selectors) {
         try {
           if (target.matches(selector)) return target;
           const closest = target.closest(selector);
-          if (closest instanceof HTMLElement) return closest;
+          if (isContinuationTargetAllowed(closest)) return closest;
         } catch {
           // ignore invalid selector
         }
@@ -577,7 +585,12 @@ export function createContinuationController({
 
     window.setTimeout(() => {
       const sendElement = resolveClickedSendElement(target, selectorConfig);
-      if (!sendElement || !sendElement.isConnected || !isElementActuallyEnabled(sendElement)) {
+      if (
+        !sendElement ||
+        !sendElement.isConnected ||
+        !isContinuationTargetAllowed(sendElement) ||
+        !isElementActuallyEnabled(sendElement)
+      ) {
         return;
       }
       sendElement.click();
